@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build Output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test Results & Reports
+test-results/
+coverage/
+playwright-report/
+html-report/
+allure-results/
+a11y-report/
+visual-regression/
+performance-results/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.iml
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swk
+
+# Cache
+.cache/
+.eslintcache
+.prettierignore
