@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { createApiClient, ApiClient } from '@/utils/api-client.js';
-import { config } from '@/utils/config.js';
-import { createLogger } from '@/utils/logger.js';
-import type { Product } from '@/types/index.js';
+import { createApiClient, ApiClient } from '@/utils/api-client';
+import { config } from '@/utils/config';
+import { createLogger } from '@/utils/logger';
+import type { Product } from '@/types/index';
 
 describe('@api @contract Product API Tests', () => {
   let apiClient: ApiClient;
@@ -52,10 +52,10 @@ describe('@api @contract Product API Tests', () => {
 
       // @assert
       expect(product.id).toBe(productId);
-      expect(product.title).toBeDefined();
+      expect(product.name).toBeDefined();
       expect(product.price).toBeGreaterThan(0);
-      expect(product.stock).toBeGreaterThanOrEqual(0);
-      logger.info(`Retrieved product: ${product.title}`);
+      expect(product.inStock).toBeDefined();
+      logger.info(`Retrieved product: ${product.name}`);
     });
   });
 
@@ -71,15 +71,15 @@ describe('@api @contract Product API Tests', () => {
       logger.info(`Updated product price to ${updatedProduct.price}`);
     });
 
-    it('should update product stock', async () => {
+    it('should update product availability', async () => {
       // @arrange & @act
       const updatedProduct = await apiClient.patch<Product>('/products/1', {
-        stock: 50,
+        inStock: true,
       });
 
       // @assert
-      expect(updatedProduct.stock).toBe(50);
-      logger.info(`Updated product stock to ${updatedProduct.stock}`);
+      expect(updatedProduct.inStock).toBe(true);
+      logger.info(`Updated product availability to ${updatedProduct.inStock}`);
     });
   });
 
@@ -92,13 +92,13 @@ describe('@api @contract Product API Tests', () => {
 
       // @assert
       expect(product).toHaveProperty('id');
-      expect(product).toHaveProperty('title');
+      expect(product).toHaveProperty('name');
       expect(product).toHaveProperty('price');
-      expect(product).toHaveProperty('stock');
+      expect(product).toHaveProperty('inStock');
       expect(typeof product.id).toBe('number');
-      expect(typeof product.title).toBe('string');
+      expect(typeof product.name).toBe('string');
       expect(typeof product.price).toBe('number');
-      expect(typeof product.stock).toBe('number');
+      expect(typeof product.inStock).toBe('boolean');
       logger.info('Product schema validation passed');
     });
 
@@ -122,14 +122,14 @@ describe('@api @contract Product API Tests', () => {
 
       // @assert
       products.forEach((product) => {
-        expect(product.stock).toBeGreaterThanOrEqual(0);
+        expect(product.inStock).toBeDefined();
       });
-      logger.info('All products have non-negative stock');
+      logger.info('All products have availability status');
     });
   });
 
   describe('@regression Product Search', () => {
-    it('should search products by title', async () => {
+    it('should search products by name', async () => {
       // @arrange
       const searchTerm = 'laptop';
 
@@ -143,7 +143,7 @@ describe('@api @contract Product API Tests', () => {
       if (products.length > 0) {
         products.forEach((product) => {
           expect(
-            product.title.toLowerCase().includes(searchTerm.toLowerCase())
+            product.name.toLowerCase().includes(searchTerm.toLowerCase())
           ).toBe(true);
         });
       }

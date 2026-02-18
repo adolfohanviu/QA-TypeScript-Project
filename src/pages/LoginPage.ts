@@ -4,7 +4,7 @@
  */
 
 import { Page } from '@playwright/test';
-import { BasePage } from './BasePage.js';
+import { BasePage } from './BasePage';
 
 export class LoginPage extends BasePage {
   // Selectors with strong typing

@@ -3,14 +3,9 @@
  * Provides common page interaction methods with type safety
  */
 
-import { Page, Locator, expect } from '@playwright/test';
-import { createLogger } from '@/utils/logger.js';
-import type { TestMetadata } from '@/types/index.js';
-
-interface PageOptions {
-  url?: string;
-  waitForNavigation?: boolean;
-}
+import { Page, Locator } from '@playwright/test';
+import { createLogger } from '@/utils/logger';
+import type { TestMetadata } from '@/types/index';
 
 /**
  * Base Page Object Model class
@@ -33,7 +28,7 @@ export abstract class BasePage {
   /**
    * Navigate to URL
    */
-  async goto(url: string, options?: PageOptions): Promise<void> {
+  async goto(url: string): Promise<void> {
     this.logger.info(`Navigating to ${url}`);
     try {
       await this.page.goto(url, { waitUntil: 'networkidle' });

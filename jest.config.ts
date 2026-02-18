@@ -1,7 +1,8 @@
 import type { Config } from 'jest';
 
 const config: Config = {
-  preset: 'jest-playwright-preset',
+  preset: 'ts-jest',
+  extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.spec.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
@@ -10,20 +11,27 @@ const config: Config = {
     '^@tests/(.*)$': '<rootDir>/tests/$1',
   },
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.tsx?$': [
       'ts-jest',
       {
         useESM: true,
         tsconfig: {
           module: 'ESNext',
+          target: 'ESNext',
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
         },
       },
     ],
   },
+  transformIgnorePatterns: [
+    '/node_modules/',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/index.ts',
+    '!src/mocks/**',
   ],
   coveragePathIgnorePatterns: [
     '/node_modules/',
@@ -34,17 +42,6 @@ const config: Config = {
   maxWorkers: process.env.HEADLESS === 'false' ? 1 : 4,
   reporters: [
     'default',
-    [
-      'jest-allure2',
-      {
-        resultsDir: 'allure-results',
-        labels: {
-          epic: 'epic',
-          feature: 'feature',
-          story: 'story',
-        },
-      },
-    ],
   ],
 };
 

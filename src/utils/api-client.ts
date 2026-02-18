@@ -4,10 +4,8 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
-import { z } from 'zod';
-import { config } from './config.js';
-import { createLogger } from './logger.js';
-import type { ApiResponse, User, Product, Order } from '@/types/index.js';
+import { config } from './config';
+import { createLogger } from './logger';
 
 const logger = createLogger('ApiClient');
 

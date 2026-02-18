@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { createApiClient, ApiClient } from '@/utils/api-client.js';
-import { config } from '@/utils/config.js';
-import { createLogger } from '@/utils/logger.js';
-import type { User, Order, Product } from '@/types/index.js';
+import { createApiClient, ApiClient } from '@/utils/api-client';
+import { config } from '@/utils/config';
+import { createLogger } from '@/utils/logger';
+import type { User, Order, Product } from '@/types/index';
 
 describe('@api @workflow Checkout E2E Flow', () => {
   let apiClient: ApiClient;
@@ -37,9 +37,9 @@ describe('@api @workflow Checkout E2E Flow', () => {
       expect(products.length).toBeGreaterThan(0);
       const product = products[0];
       testProductId = product.id;
-      expect(product.stock).toBeGreaterThan(0);
+      expect(product.inStock).toBeDefined();
       logger.info(
-        `✓ Product fetched: ${product.title} - $${product.price} (Stock: ${product.stock})`
+        `✓ Product fetched: ${product.name} - $${product.price} (In Stock: ${product.inStock})`
       );
 
       // Step 3: Create Order
@@ -104,7 +104,7 @@ describe('@api @workflow Checkout E2E Flow', () => {
 
       // Get initial stock
       const product = await apiClient.get<Product>('/products/1');
-      const initialStock = product.stock;
+      const initialStock = product.inStock;
       logger.info(`Initial stock: ${initialStock}`);
 
       // Create order

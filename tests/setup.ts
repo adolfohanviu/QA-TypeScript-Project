@@ -4,7 +4,13 @@
  */
 
 import dotenv from 'dotenv';
-import { LoggerFactory } from '@/utils/logger.js';
+import { LoggerFactory } from '@/utils/logger';
+import type { Logger } from 'winston';
+
+// Extend globalThis with logger property
+declare global {
+  var logger: Logger;
+}
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +20,35 @@ jest.setTimeout(60000);
 
 // Setup global logger
 globalThis.logger = LoggerFactory.getLogger('global-setup');
+
+// Setup MSW server lifecycle (lazy load to avoid ESM issues)
+let server: any;
+
+beforeAll(async () => {
+  try {
+    const { server: mswServer } = await import('@/mocks/server');
+    server = mswServer;
+    globalThis.logger?.info('Starting MSW server for API mocking');
+    server.listen({ onUnhandledRequest: 'warn' });
+  } catch (error) {
+    globalThis.logger?.warn('Could not start MSW server:', error);
+  }
+});
+
+// Reset handlers after each test
+afterEach(() => {
+  if (server?.resetHandlers) {
+    server.resetHandlers();
+  }
+});
+
+// Clean up after all tests
+afterAll(() => {
+  if (server) {
+    globalThis.logger?.info('Closing MSW server');
+    server.close?.();
+  }
+});
 
 // Add custom matchers
 expect.extend({

@@ -4,10 +4,10 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { ShoppingPage } from '@/pages/ShoppingPage.js';
-import { CartPage } from '@/pages/CartPage.js';
-import { CheckoutPage, CheckoutFormData } from '@/pages/CheckoutPage.js';
-import { createLogger } from '@/utils/logger.js';
+import { ShoppingPage } from '@/pages/ShoppingPage';
+import { CartPage } from '@/pages/CartPage';
+import { CheckoutPage, CheckoutFormData } from '@/pages/CheckoutPage';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('CheckoutTests');
 
@@ -100,7 +100,6 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
       cardNumber: validCheckoutData.cardNumber,
       cardExpiry: validCheckoutData.cardExpiry,
       cardCVC: validCheckoutData.cardCVC,
-      cardholderName: `${validCheckoutData.firstName} ${validCheckoutData.lastName}`,
     });
 
     // @assert
@@ -112,7 +111,6 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
   test('@regression should complete full checkout process', async () => {
     // @arrange
     await cartPage.navigate();
-    const cartTotal = await cartPage.getTotal();
 
     // @act
     await cartPage.clickCheckout();
@@ -143,15 +141,20 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
   test('@regression should validate order summary', async () => {
     // @arrange
     await cartPage.navigate();
-    const cartItems = await cartPage.getItemCount();
+    const cartItems = await cartPage.getAllItems();
 
     // @act
     await cartPage.clickCheckout();
-    const summaryIsCorrect = await checkoutPage.verifyOrderSummary(cartItems);
+    // Format items for summary verification
+    const itemsSummary = cartItems.map(item => ({
+      name: item.name,
+      quantity: item.quantity
+    }));
+    const summaryIsCorrect = await checkoutPage.verifyOrderSummary(itemsSummary);
 
     // @assert
     expect(summaryIsCorrect).toBe(true);
-    logger.info(`✓ Order summary shows ${cartItems} items`);
+    logger.info(`✓ Order summary verified`);
   });
 });
 
@@ -303,7 +306,6 @@ test.describe('@ui @checkout Form Functionality Tests', () => {
     await checkoutPage.clearShippingForm();
 
     // @assert
-    const hasError = await checkoutPage.hasError();
     logger.info(`✓ Form cleared successfully`);
   });
 
@@ -362,7 +364,6 @@ test.describe('@ui @checkout Order Confirmation Tests', () => {
   test('@regression should allow continuing shopping after order', async ({ page }) => {
     // @arrange
     const shoppingPage = new ShoppingPage(page);
-    const cartPage = new CartPage(page);
     const checkoutPage = new CheckoutPage(page);
 
     // @act

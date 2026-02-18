@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { createApiClient, ApiClient, ApiError } from '@/utils/api-client.js';
-import { config } from '@/utils/config.js';
-import { createLogger } from '@/utils/logger.js';
-import type { User } from '@/types/index.js';
+import { createApiClient, ApiClient, ApiError } from '@/utils/api-client';
+import { config } from '@/utils/config';
+import { createLogger } from '@/utils/logger';
+import type { User } from '@/types/index';
 
 describe('@api @contract User API Tests', () => {
   let apiClient: ApiClient;
@@ -68,9 +68,9 @@ describe('@api @contract User API Tests', () => {
     it('should create new user ', async () => {
       // @arrange
       const newUser = {
-        name: 'Test User',
-        email: 'test@example.com',
+        firstName: 'Test',
         username: 'testuser',
+        email: 'test@example.com',
       };
 
       // @act
@@ -78,7 +78,7 @@ describe('@api @contract User API Tests', () => {
 
       // @assert
       expect(createdUser.id).toBeDefined();
-      expect(createdUser.name).toBe(newUser.name);
+      expect(createdUser.username).toBe(newUser.username);
       logger.info(`Created user with ID: ${createdUser.id}`);
     });
   });

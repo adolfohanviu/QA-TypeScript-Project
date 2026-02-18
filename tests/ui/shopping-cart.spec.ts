@@ -4,9 +4,9 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { ShoppingPage } from '@/pages/ShoppingPage.js';
-import { CartPage } from '@/pages/CartPage.js';
-import { createLogger } from '@/utils/logger.js';
+import { ShoppingPage } from '@/pages/ShoppingPage';
+import { CartPage } from '@/pages/CartPage';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ShoppingCartTests');
 
@@ -35,7 +35,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
 
     // @assert
     expect(names.length).toBeGreaterThan(0);
-    names.forEach((name) => {
+    names.forEach((name: string) => {
       expect(name).toBeTruthy();
     });
     logger.info(`✓ All products are visible: ${names.join(', ')}`);
@@ -51,7 +51,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
 
     // @assert
     expect(names.length).toBeGreaterThan(0);
-    names.forEach((name) => {
+    names.forEach((name: string) => {
       expect(name.toLowerCase()).toContain(searchTerm.toLowerCase());
     });
     logger.info(`✓ Search found ${names.length} products matching "${searchTerm}"`);
@@ -144,18 +144,16 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     // @arrange
     // @act
     const products = await shoppingPage.getAllProductNames();
-    let hasAnyDiscount = false;
 
     for (const product of products) {
       const hasDiscount = await shoppingPage.hasDiscount(product);
       if (hasDiscount) {
-        hasAnyDiscount = true;
         logger.info(`✓ Found discount badge on: ${product}`);
         break;
       }
     }
 
-    // @assert - At least show test passes
+    // @assert - Test passes
     logger.info(`Discount badge tests completed`);
   });
 });
@@ -224,7 +222,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     // @act
     await cartPage.updateQuantity(firstItem.name, 5);
     const updatedItems = await cartPage.getAllItems();
-    const updatedItem = updatedItems.find((i) => i.name === firstItem.name);
+    const updatedItem = updatedItems.find((i: typeof firstItem) => i.name === firstItem.name);
 
     // @assert
     expect(updatedItem?.quantity).toBe(5);

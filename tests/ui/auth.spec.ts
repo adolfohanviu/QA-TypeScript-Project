@@ -5,9 +5,9 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { chromium, Browser, BrowserContext, Page } from '@playwright/test';
-import { LoginPage } from '@/pages/LoginPage.js';
-import { config } from '@/utils/config.js';
-import { createLogger } from '@/utils/logger.js';
+import { LoginPage } from '@/pages/LoginPage';
+import { config } from '@/utils/config';
+import { createLogger } from '@/utils/logger';
 
 describe('@smoke @regression Login Tests', () => {
   let browser: Browser;
@@ -23,7 +23,7 @@ describe('@smoke @regression Login Tests', () => {
       headless: config.get('headless'),
     });
 
-    context = await browser.createContext();
+    context = await browser.newContext();
     page = await context.newPage();
     loginPage = new LoginPage(page);
 
