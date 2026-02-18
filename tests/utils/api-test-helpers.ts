@@ -3,9 +3,9 @@
  * Helper functions for API testing
  */
 
-import { createApiClient, ApiClient } from '@/utils/api-client.js';
-import { config } from '@/utils/config.js';
-import type { User, Product, Order } from '@/types/index.js';
+import { createApiClient, ApiClient } from '@/utils/api-client';
+import { config } from '@/utils/config';
+import type { User, Product, Order } from '@/types/index';
 
 /**
  * API Test Context
@@ -165,13 +165,23 @@ export class ApiAssertions {
 
 /**
  * Create API test context
+ * Factory function for instantiating a new ApiTestContext
+ * @returns {ApiTestContext} A new API test context instance
  */
 export function createTestContext(): ApiTestContext {
   return new ApiTestContext();
 }
 
 /**
- * Wait for async condition
+ * Wait for async condition to be met
+ * Polls an async condition function with configurable timeout and interval
+ * @param {() => Promise<boolean>} condition - Async function that returns true when condition is met
+ * @param {number} timeoutMs - Maximum time to wait in milliseconds (default: 5000)
+ * @param {number} intervalMs - Polling interval in milliseconds (default: 100)
+ * @returns {Promise<void>} Resolves when condition is met
+ * @throws {Error} If condition not met within timeout
+ * @example
+ * await waitForCondition(() => apiClient.get('/status'), 10000);
  */
 export async function waitForCondition(
   condition: () => Promise<boolean>,
@@ -190,6 +200,15 @@ export async function waitForCondition(
 
 /**
  * Retry async operation with exponential backoff
+ * Executes an async operation with automatic retry logic using exponential backoff
+ * @template T - The type of value returned by the operation
+ * @param {() => Promise<T>} operation - Async function to execute and retry
+ * @param {number} maxAttempts - Maximum number of retry attempts (default: 3)
+ * @param {number} initialDelayMs - Initial delay between retries in milliseconds (default: 100)
+ * @returns {Promise<T>} Result of successful operation
+ * @throws {Error} If operation fails after all retry attempts exhausted
+ * @example
+ * const data = await retryAsync(() => apiClient.get('/products'), 3, 100);
  */
 export async function retryAsync<T>(
   operation: () => Promise<T>,

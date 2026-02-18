@@ -4,7 +4,7 @@
  */
 
 import { rest } from 'msw';
-import type { User, Product, Order } from '@/types/index.js';
+import type { User, Product, Order } from '@/types/index';
 
 // Mock data
 const mockUsers: User[] = [

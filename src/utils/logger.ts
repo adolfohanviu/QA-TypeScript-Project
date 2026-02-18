@@ -79,6 +79,13 @@ export class LoggerFactory {
 
 /**
  * Helper logger functions for consistent usage
+ * Primary pattern for creating loggers throughout the project
+ * @param {string} context - The context/label for this logger instance
+ * @returns {Object} Logger object with debug, info, warn, and error methods
+ * @example
+ * const logger = createLogger('MyComponent');
+ * logger.info('Something happened');
+ * logger.error('An error occurred', error);
  */
 export const createLogger = (context: string) => {
   const logger = LoggerFactory.getLogger(context);

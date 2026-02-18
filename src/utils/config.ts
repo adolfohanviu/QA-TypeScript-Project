@@ -5,7 +5,7 @@
 
 import dotenv from 'dotenv';
 import { z } from 'zod';
-import type { TestConfig } from '@/types/index.js';
+import type { TestConfig } from '@/types/index';
 
 // Load environment variables
 dotenv.config();

@@ -4,12 +4,11 @@
  */
 
 import dotenv from 'dotenv';
-import { LoggerFactory } from '@/utils/logger';
-import type { Logger } from 'winston';
+import { createLogger } from '@/utils/logger';
 
 // Extend globalThis with logger property
 declare global {
-  var logger: Logger;
+  var logger: ReturnType<typeof createLogger>;
 }
 
 // Load environment variables
@@ -19,7 +18,7 @@ dotenv.config();
 jest.setTimeout(60000);
 
 // Setup global logger
-globalThis.logger = LoggerFactory.getLogger('global-setup');
+globalThis.logger = createLogger('global-setup');
 
 // Setup MSW server lifecycle (lazy load to avoid ESM issues)
 let server: any;
@@ -31,7 +30,9 @@ beforeAll(async () => {
     globalThis.logger?.info('Starting MSW server for API mocking');
     server.listen({ onUnhandledRequest: 'warn' });
   } catch (error) {
-    globalThis.logger?.warn('Could not start MSW server:', error);
+    globalThis.logger?.warn(
+      `Could not start MSW server: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 });
 
