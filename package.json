@@ -1,0 +1,56 @@
+{
+  "name": "@qa/playwright-typescript",
+  "version": "1.0.0",
+  "description": "Enterprise-grade test automation framework with Playwright, TypeScript, and Jest",
+  "author": "QA Engineering",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "test:ui": "jest tests/ui",
+    "test:api": "jest tests/api",
+    "test:smoke": "jest --testNamePattern='@smoke' --maxWorkers=4",
+    "test:regression": "jest --testNamePattern='@regression'",
+    "test:contract": "jest --testNamePattern='@contract'",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "test:headed": "HEADLESS=false jest --maxWorkers=1",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=lcov",
+    "lint": "eslint src tests --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "type-check": "tsc --noEmit",
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "docker:build": "docker build -t qa-typescript-tests:latest .",
+    "docker:test": "docker run --rm -v $(pwd)/allure-results:/app/allure-results qa-typescript-tests:latest npm test"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@wdio/allure-reporter": "^8.27.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "jest-allure2": "^0.1.2",
+    "jest-playwright-preset": "^3.0.1",
+    "msw": "^2.0.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
+  }
+}

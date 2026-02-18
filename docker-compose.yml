@@ -1,0 +1,119 @@
+version: '3.9'
+
+services:
+  # API Mock Server (if needed)
+  api:
+    image: mockserver/mockserver:latest
+    container_name: qa-api-mock
+    ports:
+      - "3001:1080"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/mock-api.json
+    volumes:
+      - ./config/mock-api.json:/config/mock-api.json
+    networks:
+      - qa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # UI Test Application (optional - if you have a local app to test)
+  app:
+    image: node:20-alpine
+    container_name: qa-app
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./app:/app
+    networks:
+      - qa-network
+    restart: unless-stopped
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - api
+
+  # UI Tests
+  tests-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qa-tests-ui
+    environment:
+      CI: "true"
+      BASE_URL: http://app:3000
+      API_BASE_URL: http://api:1080
+      HEADLESS: "true"
+      REPORT_DIR: /results
+    volumes:
+      - ./tests:/app/tests
+      - ./results:/results
+    networks:
+      - qa-network
+    depends_on:
+      app:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    command: npm run test:ui
+
+  # API Tests
+  tests-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qa-tests-api
+    environment:
+      CI: "true"
+      API_BASE_URL: http://api:1080
+      REPORT_DIR: /results
+    volumes:
+      - ./tests:/app/tests
+      - ./results:/results
+    networks:
+      - qa-network
+    depends_on:
+      api:
+        condition: service_healthy
+    command: npm run test:api
+
+  # Report Server (view test results)
+  report-server:
+    image: node:20-alpine
+    container_name: qa-report-server
+    working_dir: /reports
+    ports:
+      - "3333:3333"
+    volumes:
+      - ./results:/reports
+    networks:
+      - qa-network
+    restart: unless-stopped
+    command: |
+      sh -c "npm install -g http-server && http-server -p 3333 -c-1"
+    depends_on:
+      - tests-ui
+      - tests-api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3333"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  qa-network:
+    driver: bridge
+
+volumes:
+  results:
+    driver: local

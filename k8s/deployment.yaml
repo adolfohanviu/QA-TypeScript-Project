@@ -1,0 +1,162 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playwright-tests
+  namespace: qa-automation
+  labels:
+    app: playwright-tests
+    tier: testing
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: playwright-tests
+  template:
+    metadata:
+      labels:
+        app: playwright-tests
+        tier: testing
+    spec:
+      serviceAccountName: playwright-tests
+      containers:
+      - name: playwright
+        image: playwright-tests:latest
+        imagePullPolicy: Always
+        env:
+        - name: CI
+          value: "true"
+        - name: BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qa-config
+              key: base-url
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: qa-config
+              key: api-base-url
+        - name: HEADLESS
+          value: "true"
+        - name: REPORT_DIR
+          value: "/results"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: results
+          mountPath: /results
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+            - test
+            - -f
+            - /results/.health
+          initialDelaySeconds: 30
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - test
+            - -f
+            - /results/.ready
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+      volumes:
+      - name: results
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: qa-config
+      nodeSelector:
+        workload: testing
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - playwright-tests
+              topologyKey: kubernetes.io/hostname
+      restartPolicy: Never
+      ttlSecondsAfterFinished: 3600
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: playwright-tests-scheduled
+  namespace: qa-automation
+spec:
+  # Run tests daily at 2 AM UTC
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: playwright-tests
+            tier: testing
+        spec:
+          serviceAccountName: playwright-tests
+          containers:
+          - name: playwright
+            image: playwright-tests:latest
+            imagePullPolicy: Always
+            env:
+            - name: CI
+              value: "true"
+            - name: BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: qa-config
+                  key: base-url
+            - name: API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: qa-config
+                  key: api-base-url
+            - name: HEADLESS
+              value: "true"
+            - name: REPORT_DIR
+              value: "/results"
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+              limits:
+                memory: "1Gi"
+                cpu: "1000m"
+            volumeMounts:
+            - name: results
+              mountPath: /results
+          volumes:
+          - name: results
+            emptyDir: {}
+          restartPolicy: OnFailure
+          nodeSelector:
+            workload: testing
+      backoffLimit: 2
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1

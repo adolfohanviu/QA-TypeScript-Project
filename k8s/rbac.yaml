@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: playwright-tests
+  namespace: qa-automation
+  labels:
+    app: playwright-tests
+    tier: testing
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: playwright-tests
+  namespace: qa-automation
+  labels:
+    app: playwright-tests
+    tier: testing
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/logs"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: playwright-tests
+  namespace: qa-automation
+  labels:
+    app: playwright-tests
+    tier: testing
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: playwright-tests
+subjects:
+- kind: ServiceAccount
+  name: playwright-tests
+  namespace: qa-automation
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: playwright-tests-reader
+  labels:
+    app: playwright-tests
+    tier: testing
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: playwright-tests-reader
+  labels:
+    app: playwright-tests
+    tier: testing
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: playwright-tests-reader
+subjects:
+- kind: ServiceAccount
+  name: playwright-tests
+  namespace: qa-automation
