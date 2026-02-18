@@ -3,22 +3,45 @@
  * Shopping page and cart functionality tests
  */
 
-import { test, expect } from '@playwright/test';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { chromium, Browser, BrowserContext, Page } from '@playwright/test';
 import { ShoppingPage } from '@/pages/ShoppingPage';
 import { CartPage } from '@/pages/CartPage';
+import { config } from '@/utils/config';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('ShoppingCartTests');
 
-test.describe('@ui @shopping Shopping Page Tests', () => {
+describe('@ui @shopping Shopping Page Tests', () => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
   let shoppingPage: ShoppingPage;
 
-  test.beforeEach(async ({ page }) => {
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
     shoppingPage = new ShoppingPage(page);
     await shoppingPage.navigate();
   });
 
-  test('@smoke should load products page', async () => {
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
+  });
+
+  it('@smoke should load products page', async () => {
     // @arrange
     // @act
     const productCount = await shoppingPage.getProductCount();
@@ -28,7 +51,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Products page loaded with ${productCount} products`);
   });
 
-  test('@smoke should display products in grid', async () => {
+  it('@smoke should display products in grid', async () => {
     // @arrange
     // @act
     const names = await shoppingPage.getAllProductNames();
@@ -41,7 +64,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ All products are visible: ${names.join(', ')}`);
   });
 
-  test('@regression should search products', async () => {
+  it('@regression should search products', async () => {
     // @arrange
     const searchTerm = 'laptop';
 
@@ -57,7 +80,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Search found ${names.length} products matching "${searchTerm}"`);
   });
 
-  test('@regression should filter products by category', async () => {
+  it('@regression should filter products by category', async () => {
     // @arrange
     const category = 'Electronics';
 
@@ -70,7 +93,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Filtered by category "${category}": ${productCount} products`);
   });
 
-  test('@regression should sort products', async () => {
+  it('@regression should sort products', async () => {
     // @arrange
     // @act
     await shoppingPage.sortProducts('price-low-to-high');
@@ -81,7 +104,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Products sorted by price (low to high)`);
   });
 
-  test('@regression should add single product to cart', async () => {
+  it('@regression should add single product to cart', async () => {
     // @arrange
     const productName = 'Laptop Pro';
 
@@ -94,7 +117,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Added product to cart. Cart count: ${cartCount}`);
   });
 
-  test('@regression should add multiple quantities of product', async () => {
+  it('@regression should add multiple quantities of product', async () => {
     // @arrange
     const productName = 'Wireless Mouse';
     const quantity = 3;
@@ -108,7 +131,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Added ${quantity} items to cart`);
   });
 
-  test('@regression should add multiple different products', async () => {
+  it('@regression should add multiple different products', async () => {
     // @arrange
     const products = ['Laptop Pro', 'Wireless Mouse', 'USB-C Cable'];
 
@@ -127,7 +150,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Added multiple products. Cart count: ${cartCount}`);
   });
 
-  test('@regression should get product price correctly', async () => {
+  it('@regression should get product price correctly', async () => {
     // @arrange
     const productName = 'Laptop Pro';
 
@@ -140,7 +163,7 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
     logger.info(`✓ Product price retrieved: $${price}`);
   });
 
-  test('@regression should show discount badge on sale items', async () => {
+  it('@regression should show discount badge on sale items', async () => {
     // @arrange
     // @act
     const products = await shoppingPage.getAllProductNames();
@@ -158,11 +181,19 @@ test.describe('@ui @shopping Shopping Page Tests', () => {
   });
 });
 
-test.describe('@ui @cart Cart Page Tests', () => {
+describe('@ui @cart Cart Page Tests', () => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
   let shoppingPage: ShoppingPage;
   let cartPage: CartPage;
 
-  test.beforeEach(async ({ page }) => {
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
     shoppingPage = new ShoppingPage(page);
     cartPage = new CartPage(page);
 
@@ -176,7 +207,20 @@ test.describe('@ui @cart Cart Page Tests', () => {
     }
   });
 
-  test('@smoke should display cart items', async () => {
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
+  });
+
+  it('@smoke should display cart items', async () => {
     // @arrange
     // @act
     await cartPage.navigate();
@@ -187,7 +231,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     logger.info(`✓ Cart displays ${itemCount} items`);
   });
 
-  test('@regression should show cart totals', async () => {
+  it('@regression should show cart totals', async () => {
     // @arrange
     // @act
     await cartPage.navigate();
@@ -202,7 +246,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     logger.info(`✓ Cart totals: Subtotal=$${subtotal}, Tax=$${tax}, Total=$${total}`);
   });
 
-  test('@regression should verify price calculation', async () => {
+  it('@regression should verify price calculation', async () => {
     // @arrange
     // @act
     await cartPage.navigate();
@@ -213,7 +257,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     logger.info(`✓ Price calculation verified`);
   });
 
-  test('@regression should update item quantity', async () => {
+  it('@regression should update item quantity', async () => {
     // @arrange
     await cartPage.navigate();
     const items = await cartPage.getAllItems();
@@ -229,7 +273,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     logger.info(`✓ Updated item quantity to 5`);
   });
 
-  test('@regression should remove item from cart', async () => {
+  it('@regression should remove item from cart', async () => {
     // @arrange
     await cartPage.navigate();
     const initialCount = await cartPage.getItemCount();
@@ -246,7 +290,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     }
   });
 
-  test('@regression should empty cart after removing all items', async () => {
+  it('@regression should empty cart after removing all items', async () => {
     // @arrange
     await cartPage.navigate();
 
@@ -259,7 +303,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     logger.info(`✓ Cart is now empty`);
   });
 
-  test('@regression should apply coupon code', async () => {
+  it('@regression should apply coupon code', async () => {
     // @arrange
     await cartPage.navigate();
     const originalTotal = await cartPage.getTotal();
@@ -277,7 +321,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     }
   });
 
-  test('@regression should get discount amount', async () => {
+  it('@regression should get discount amount', async () => {
     // @arrange
     await cartPage.navigate();
 
@@ -294,7 +338,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     }
   });
 
-  test('@regression should navigate back to shopping', async () => {
+  it('@regression should navigate back to shopping', async () => {
     // @arrange
     await cartPage.navigate();
 
@@ -307,7 +351,7 @@ test.describe('@ui @cart Cart Page Tests', () => {
     logger.info(`✓ Navigated back to shopping with ${products} products`);
   });
 
-  test('@regression should persist cart items', async ({ page }) => {
+  it('@regression should persist cart items', async () => {
     // @arrange
     let itemCountBefore: number;
     let itemCountAfter: number;
@@ -326,8 +370,33 @@ test.describe('@ui @cart Cart Page Tests', () => {
   });
 });
 
-test.describe('@ui @cart Empty Cart Tests', () => {
-  test('@smoke should display empty cart message', async ({ page }) => {
+describe('@ui @cart Empty Cart Tests', () => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
+
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
+  });
+
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
+  });
+
+  it('@smoke should display empty cart message', async () => {
     // @arrange
     const cartPage = new CartPage(page);
 
@@ -340,7 +409,7 @@ test.describe('@ui @cart Empty Cart Tests', () => {
     logger.info(`✓ Empty cart message displayed`);
   });
 
-  test('@regression should allow continuing shopping from empty cart', async ({ page }) => {
+  it('@regression should allow continuing shopping from empty cart', async () => {
     // @arrange
     const cartPage = new CartPage(page);
     const shoppingPage = new ShoppingPage(page);

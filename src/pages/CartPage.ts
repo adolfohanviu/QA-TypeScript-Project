@@ -15,23 +15,18 @@ export interface CartItem {
 }
 
 export class CartPage extends BasePage {
-  private readonly _cartItemsContainer: Locator;
   private readonly cartItems: Locator;
   private readonly checkoutButton: Locator;
   private readonly emptyCartMessage: Locator;
   private readonly cartTotal: Locator;
-  private readonly _updateQuantityButton: (itemId: string) => Locator;
   private readonly removeItemButton: (itemId: string) => Locator;
 
   constructor(page: Page) {
     super(page);
-    this._cartItemsContainer = page.locator('[data-testid="cart-items"]');
     this.cartItems = page.locator('[data-testid="cart-item"]');
     this.checkoutButton = page.locator('[data-testid="checkout-button"]');
     this.emptyCartMessage = page.locator('[data-testid="empty-cart-message"]');
     this.cartTotal = page.locator('[data-testid="cart-total"]');
-    this._updateQuantityButton = (itemId: string) => 
-      page.locator(`[data-testid="update-quantity-${itemId}"]`);
     this.removeItemButton = (itemId: string) => 
       page.locator(`[data-testid="remove-item-${itemId}"]`);
   }
@@ -119,15 +114,6 @@ export class CartPage extends BasePage {
       // Fallback: try removing by ID anyway
       await this.removeItemButton(itemNameOrId).click();
     }
-    await this.page.waitForTimeout(300);
-  }
-
-  /**
-   * Internal method to remove item by ID
-   */
-  private async _removeItemById(itemId: string): Promise<void> {
-    this.logger.info(`Removing item ${itemId} from cart`);
-    await this.removeItemButton(itemId).click();
     await this.page.waitForTimeout(300);
   }
 

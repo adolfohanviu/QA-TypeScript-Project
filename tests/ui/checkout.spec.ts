@@ -3,10 +3,12 @@
  * Checkout flow and payment processing tests
  */
 
-import { test, expect } from '@playwright/test';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { chromium, Browser, BrowserContext, Page } from '@playwright/test';
 import { ShoppingPage } from '@/pages/ShoppingPage';
 import { CartPage } from '@/pages/CartPage';
 import { CheckoutPage, CheckoutFormData } from '@/pages/CheckoutPage';
+import { config } from '@/utils/config';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('CheckoutTests');
@@ -26,12 +28,20 @@ const validCheckoutData: CheckoutFormData = {
   cardCVC: '123',
 };
 
-test.describe('@ui @checkout Checkout Flow Tests', () => {
+describe('@ui @checkout Checkout Flow Tests', () => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
   let shoppingPage: ShoppingPage;
   let cartPage: CartPage;
   let checkoutPage: CheckoutPage;
 
-  test.beforeEach(async ({ page }) => {
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
     shoppingPage = new ShoppingPage(page);
     cartPage = new CartPage(page);
     checkoutPage = new CheckoutPage(page);
@@ -46,7 +56,20 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     }
   });
 
-  test('@smoke should navigate to checkout from cart', async () => {
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
+  });
+
+  it('@smoke should navigate to checkout from cart', async () => {
     // @arrange
     // @act
     await cartPage.navigate();
@@ -58,7 +81,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     logger.info(`✓ Successfully navigated to checkout`);
   });
 
-  test('@regression should display all checkout sections', async () => {
+  it('@regression should display all checkout sections', async () => {
     // @arrange
     // @act
     await checkoutPage.navigate();
@@ -71,7 +94,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     logger.info(`✓ All checkout sections are visible`);
   });
 
-  test('@regression should fill shipping information', async () => {
+  it('@regression should fill shipping information', async () => {
     // @arrange
     // @act
     await checkoutPage.navigate();
@@ -92,7 +115,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     logger.info(`✓ Shipping information filled successfully`);
   });
 
-  test('@regression should fill payment information', async () => {
+  it('@regression should fill payment information', async () => {
     // @arrange
     // @act
     await checkoutPage.navigate();
@@ -108,7 +131,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     logger.info(`✓ Payment information filled successfully`);
   });
 
-  test('@regression should complete full checkout process', async () => {
+  it('@regression should complete full checkout process', async () => {
     // @arrange
     await cartPage.navigate();
 
@@ -124,7 +147,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     logger.info(`✓ Checkout completed. Order: ${orderNumber}`);
   });
 
-  test('@regression should display correct order total', async () => {
+  it('@regression should display correct order total', async () => {
     // @arrange
     await cartPage.navigate();
     const cartTotal = await cartPage.getTotal();
@@ -138,7 +161,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
     logger.info(`✓ Order total matches cart total: $${checkoutTotal}`);
   });
 
-  test('@regression should validate order summary', async () => {
+  it('@regression should validate order summary', async () => {
     // @arrange
     await cartPage.navigate();
     const cartItems = await cartPage.getAllItems();
@@ -158,7 +181,7 @@ test.describe('@ui @checkout Checkout Flow Tests', () => {
   });
 });
 
-test.describe('@ui @checkout Validation Tests', () => {
+describe('@ui @checkout Validation Tests', () => {
   let checkoutPage: CheckoutPage;
 
   test.beforeEach(async ({ page }) => {
@@ -166,7 +189,7 @@ test.describe('@ui @checkout Validation Tests', () => {
     await checkoutPage.navigate();
   });
 
-  test('@regression should show error for missing first name', async () => {
+  it('@regression should show error for missing first name', async () => {
     // @arrange
     const invalidData = { ...validCheckoutData, firstName: '' };
 
@@ -195,7 +218,7 @@ test.describe('@ui @checkout Validation Tests', () => {
     logger.info(`✓ Validation error shown for missing first name`);
   });
 
-  test('@regression should show error for invalid email', async () => {
+  it('@regression should show error for invalid email', async () => {
     // @arrange
     const invalidData = { ...validCheckoutData, email: 'invalid-email' };
 
@@ -217,7 +240,7 @@ test.describe('@ui @checkout Validation Tests', () => {
     logger.info(`✓ Validation error shown for invalid email`);
   });
 
-  test('@regression should show error for invalid zip code', async () => {
+  it('@regression should show error for invalid zip code', async () => {
     // @arrange
     const invalidData = { ...validCheckoutData, zipCode: 'INVALID' };
 
@@ -239,7 +262,7 @@ test.describe('@ui @checkout Validation Tests', () => {
     logger.info(`✓ Validation error shown for invalid zip code`);
   });
 
-  test('@regression should show error for invalid card number', async () => {
+  it('@regression should show error for invalid card number', async () => {
     // @arrange
     const invalidCardData = {
       cardNumber: '1234567890123456',
@@ -262,7 +285,7 @@ test.describe('@ui @checkout Validation Tests', () => {
     logger.info(`✓ Validation error shown for invalid card`);
   });
 
-  test('@regression should show error for invalid CVV', async () => {
+  it('@regression should show error for invalid CVV', async () => {
     // @arrange
     const invalidCardData = {
       cardNumber: validCheckoutData.cardNumber,
@@ -281,7 +304,7 @@ test.describe('@ui @checkout Validation Tests', () => {
   });
 });
 
-test.describe('@ui @checkout Form Functionality Tests', () => {
+describe('@ui @checkout Form Functionality Tests', () => {
   let checkoutPage: CheckoutPage;
 
   test.beforeEach(async ({ page }) => {
@@ -289,7 +312,7 @@ test.describe('@ui @checkout Form Functionality Tests', () => {
     await checkoutPage.navigate();
   });
 
-  test('@regression should clear form data', async () => {
+  it('@regression should clear form data', async () => {
     // @arrange
     await checkoutPage.fillShippingInfo({
       firstName: validCheckoutData.firstName,
@@ -309,7 +332,7 @@ test.describe('@ui @checkout Form Functionality Tests', () => {
     logger.info(`✓ Form cleared successfully`);
   });
 
-  test('@regression should maintain form data on section change', async () => {
+  it('@regression should maintain form data on section change', async () => {
     // @arrange
     const shippingData = {
       firstName: validCheckoutData.firstName,
@@ -334,8 +357,8 @@ test.describe('@ui @checkout Form Functionality Tests', () => {
   });
 });
 
-test.describe('@ui @checkout Order Confirmation Tests', () => {
-  test('@regression should show order confirmation after successful purchase', async ({ page }) => {
+describe('@ui @checkout Order Confirmation Tests', () => {
+  it('@regression should show order confirmation after successful purchase', async ({ page }) => {
     // @arrange
     const shoppingPage = new ShoppingPage(page);
     const cartPage = new CartPage(page);
@@ -361,7 +384,7 @@ test.describe('@ui @checkout Order Confirmation Tests', () => {
     logger.info(`✓ Order confirmation displayed: ${orderNumber}`);
   });
 
-  test('@regression should allow continuing shopping after order', async ({ page }) => {
+  it('@regression should allow continuing shopping after order', async ({ page }) => {
     // @arrange
     const shoppingPage = new ShoppingPage(page);
     const checkoutPage = new CheckoutPage(page);

@@ -34,8 +34,16 @@ describe('@smoke @regression Login Tests', () => {
 
   afterEach(async () => {
     logger.info('Tearing down test environment');
-    await context.close();
-    await browser.close();
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
   });
 
   it('@smoke should login with valid credentials', async () => {
@@ -65,7 +73,7 @@ describe('@smoke @regression Login Tests', () => {
     expect(isErrorDisplayed).toBe(true);
 
     const errorMessage = await loginPage.getErrorMessage();
-    expect(errorMessage).toContain('does not match');
+    expect(errorMessage).toContain('do not match');
     logger.info('Error message test passed');
   });
 

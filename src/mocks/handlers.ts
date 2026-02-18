@@ -21,7 +21,7 @@ const orderStore = new Map<number, any>([
         { productId: 2, quantity: 1, price: 199.99 },
       ],
       total: 399.97,
-      status: 'delivered' as const,
+      status: 'pending' as const,
       createdAt: '2024-01-15T10:00:00Z',
     },
   ],
@@ -32,7 +32,7 @@ const orderStore = new Map<number, any>([
       userId: 2,
       items: [{ productId: 3, quantity: 1, price: 49.99 }],
       total: 49.99,
-      status: 'shipped' as const,
+      status: 'processing' as const,
       createdAt: '2024-01-16T14:30:00Z',
     },
   ],
@@ -43,7 +43,7 @@ const orderStore = new Map<number, any>([
       userId: 1,
       items: [{ productId: 4, quantity: 3, price: 29.99 }],
       total: 89.97,
-      status: 'processing' as const,
+      status: 'completed' as const,
       createdAt: '2024-01-17T09:15:00Z',
     },
   ],
@@ -87,6 +87,13 @@ const userHandlers = [
 
   rest.get(`${API_BASE_URL}/users/:id`, (req, res, ctx) => {
     const userId = parseInt(req.params.id as string);
+    // Return 404 for non-existent users (ID > 11)
+    if (userId > 11) {
+      return res(
+        ctx.status(404),
+        ctx.json({ error: 'User not found' })
+      );
+    }
     return res(
       ctx.status(200),
       ctx.json({
@@ -153,6 +160,36 @@ const productHandlers = [
     );
   }),
 
+  // Special routes MUST come before parameterized routes in MSW
+  rest.get(`${API_BASE_URL}/products/search`, (req, res, ctx) => {
+    const searchTerm = req.url.searchParams.get('q') || '';
+
+    const results = [
+      {
+        id: 1,
+        name: `${searchTerm} Laptop`,
+        description: `High-quality ${searchTerm} laptop`,
+        price: 1299.99,
+        inStock: true,
+        category: 'Electronics',
+      },
+      {
+        id: 2,
+        name: `${searchTerm} Case`,
+        description: `Protective ${searchTerm} case`,
+        price: 49.99,
+        inStock: true,
+        category: 'Accessories',
+      },
+    ];
+
+    return res(
+      ctx.status(200),
+      ctx.json(results)
+    );
+  }),
+
+  // Parameterized route comes AFTER specific routes
   rest.get(`${API_BASE_URL}/products/:id`, (req, res, ctx) => {
     const productId = parseInt(req.params.id as string);
     return res(
@@ -183,42 +220,24 @@ const productHandlers = [
       })
     );
   }),
-
-  rest.get(`${API_BASE_URL}/products/search`, (req, res, ctx) => {
-    const searchTerm = req.url.searchParams.get('q') || '';
-
-    return res(
-      ctx.status(200),
-      ctx.json([
-        {
-          id: 1,
-          name: `${searchTerm} Laptop`,
-          description: `High-quality ${searchTerm} laptop`,
-          price: 1299.99,
-          inStock: true,
-          category: 'Electronics',
-        },
-        {
-          id: 2,
-          name: `${searchTerm} Case`,
-          description: `Protective ${searchTerm} case`,
-          price: 49.99,
-          inStock: true,
-          category: 'Accessories',
-        },
-      ])
-    );
-  }),
 ];
 
 /**
  * Mock API handlers for orders endpoints
  */
 const orderHandlers = [
-  rest.get(`${API_BASE_URL}/orders`, (_req, res, ctx) => {
+  rest.get(`${API_BASE_URL}/orders`, (req, res, ctx) => {
+    const statusFilter = req.url.searchParams.get('status');
+    let orders = Array.from(orderStore.values());
+    
+    // Filter by status if provided
+    if (statusFilter) {
+      orders = orders.filter(order => order.status === statusFilter);
+    }
+    
     return res(
       ctx.status(200),
-      ctx.json(Array.from(orderStore.values()))
+      ctx.json(orders)
     );
   }),
 
@@ -241,11 +260,21 @@ const orderHandlers = [
   rest.post(`${API_BASE_URL}/orders`, (req, res, ctx) => {
     const body = req.body as any;
     const newOrderId = Math.max(...Array.from(orderStore.keys()), 0) + 1;
+    
+    // Calculate total from items if not provided
+    let total = body?.total || 0;
+    if (!total && body?.items && body.items.length > 0) {
+      total = body.items.reduce((sum: number, item: any) => {
+        const itemPrice = (item.unitPrice || 50) * (item.quantity || 1);
+        return sum + itemPrice;
+      }, 0);
+    }
+    
     const newOrder = {
       id: newOrderId,
       userId: body?.userId,
       items: body?.items || [],
-      total: body?.total || 0,
+      total: total,
       status: 'pending' as const,
       createdAt: new Date().toISOString(),
     };
