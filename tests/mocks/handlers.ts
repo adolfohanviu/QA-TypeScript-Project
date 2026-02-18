@@ -3,8 +3,7 @@
  * Configure MSW for API mocking in tests
  */
 
-import { setupServer } from 'msw/node';
-import { http, HttpResponse, delay } from 'msw';
+import { rest } from 'msw';
 import type { User, Product, Order } from '@/types/index.js';
 
 // Mock data
@@ -12,13 +11,15 @@ const mockUsers: User[] = [
   {
     id: 1,
     username: 'johndoe',
-    name: 'John Doe',
+    firstName: 'John',
+    lastName: 'Doe',
     email: 'john@example.com',
   },
   {
     id: 2,
     username: 'janedoe',
-    name: 'Jane Doe',
+    firstName: 'Jane',
+    lastName: 'Doe',
     email: 'jane@example.com',
   },
 ];
@@ -26,24 +27,24 @@ const mockUsers: User[] = [
 const mockProducts: Product[] = [
   {
     id: 1,
-    title: 'Laptop Pro',
+    name: 'Laptop Pro',
     price: 1299.99,
     description: 'High-performance laptop for professionals',
-    stock: 50,
+    inStock: true,
   },
   {
     id: 2,
-    title: 'Wireless Mouse',
+    name: 'Wireless Mouse',
     price: 29.99,
     description: 'Ergonomic wireless mouse',
-    stock: 200,
+    inStock: true,
   },
   {
     id: 3,
-    title: 'USB-C Cable',
+    name: 'USB-C Cable',
     price: 14.99,
     description: 'Durable USB-C charging cable',
-    stock: 500,
+    inStock: true,
   },
 ];
 
@@ -52,197 +53,157 @@ const mockOrders: Order[] = [
     id: 1,
     userId: 1,
     items: [
-      { productId: 1, quantity: 1, unitPrice: 1299.99 },
-      { productId: 2, quantity: 2, unitPrice: 29.99 },
+      { productId: 1, quantity: 1, price: 1299.99 },
+      { productId: 2, quantity: 2, price: 29.99 },
     ],
     total: 1359.97,
-    status: 'completed',
+    status: 'shipped',
     createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-15T11:00:00Z',
   },
   {
     id: 2,
     userId: 2,
-    items: [{ productId: 3, quantity: 5, unitPrice: 14.99 }],
+    items: [{ productId: 3, quantity: 5, price: 14.99 }],
     total: 74.95,
     status: 'pending',
     createdAt: '2024-01-16T14:20:00Z',
-    updatedAt: '2024-01-16T14:20:00Z',
   },
 ];
 
 // Setup handlers
 export const handlers = [
   // User endpoints
-  http.get('/api/users', async () => {
-    await delay(300);
-    return HttpResponse.json(mockUsers);
+  rest.get('/api/users', (_req, res, ctx) => {
+    return res(ctx.status(200), ctx.json(mockUsers));
   }),
 
-  http.get('/api/users/:id', async ({ params }) => {
-    await delay(200);
-    const user = mockUsers.find((u) => u.id === Number(params.id));
+  rest.get('/api/users/:id', (req, res, ctx) => {
+    const userId = Number(req.params.id);
+    const user = mockUsers.find((u) => u.id === userId);
     if (!user) {
-      return HttpResponse.json({ error: 'User not found' }, { status: 404 });
+      return res(ctx.status(404), ctx.json({ error: 'User not found' }));
     }
-    return HttpResponse.json(user);
+    return res(ctx.status(200), ctx.json(user));
   }),
 
-  http.post('/api/users', async ({ request }) => {
-    await delay(400);
-    const body = (await request.json()) as Partial<User>;
+  rest.post('/api/users', (req, res, ctx) => {
+    const body = req.body as Partial<User>;
     const newUser: User = {
-      id: Math.max(...mockUsers.map((u) => u.id)) + 1,
+      id: Math.max(...mockUsers.map((u) => u.id), 0) + 1,
       username: body.username || 'newuser',
-      name: body.name || 'New User',
+      firstName: body.firstName || 'New',
+      lastName: body.lastName || 'User',
       email: body.email || 'new@example.com',
     };
     mockUsers.push(newUser);
-    return HttpResponse.json(newUser, { status: 201 });
+    return res(ctx.status(201), ctx.json(newUser));
   }),
 
   // Product endpoints
-  http.get('/api/products', async ({ request }) => {
-    await delay(300);
-    const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('limit') || '10');
-    const search = url.searchParams.get('q');
+  rest.get('/api/products', (req, res, ctx) => {
+    const limit = parseInt(req.url.searchParams.get('limit') || '10');
+    const search = req.url.searchParams.get('q');
 
     let results = mockProducts;
     if (search) {
       results = results.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase())
+        p.name.toLowerCase().includes(search.toLowerCase())
       );
     }
-    return HttpResponse.json(results.slice(0, limit));
+    return res(ctx.status(200), ctx.json(results.slice(0, limit)));
   }),
 
-  http.get('/api/products/search', async ({ request }) => {
-    await delay(350);
-    const url = new URL(request.url);
-    const searchTerm = url.searchParams.get('q') || '';
+  rest.get('/api/products/search', (req, res, ctx) => {
+    const searchTerm = req.url.searchParams.get('q') || '';
     const filtered = mockProducts.filter((p) =>
-      p.title.toLowerCase().includes(searchTerm.toLowerCase())
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    return HttpResponse.json(filtered);
+    return res(ctx.status(200), ctx.json(filtered));
   }),
 
-  http.get('/api/products/:id', async ({ params }) => {
-    await delay(200);
-    const product = mockProducts.find((p) => p.id === Number(params.id));
+  rest.get('/api/products/:id', (req, res, ctx) => {
+    const product = mockProducts.find((p) => p.id === Number(req.params.id));
     if (!product) {
-      return HttpResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      );
+      return res(ctx.status(404), ctx.json({ error: 'Product not found' }));
     }
-    return HttpResponse.json(product);
+    return res(ctx.status(200), ctx.json(product));
   }),
 
-  http.patch('/api/products/:id', async ({ params, request }) => {
-    await delay(300);
-    const product = mockProducts.find((p) => p.id === Number(params.id));
+  rest.patch('/api/products/:id', (req, res, ctx) => {
+    const product = mockProducts.find((p) => p.id === Number(req.params.id));
     if (!product) {
-      return HttpResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      );
+      return res(ctx.status(404), ctx.json({ error: 'Product not found' }));
     }
-    const updates = (await request.json()) as Partial<Product>;
+    const updates = req.body as Partial<Product>;
     Object.assign(product, updates);
-    return HttpResponse.json(product);
+    return res(ctx.status(200), ctx.json(product));
   }),
 
   // Order endpoints
-  http.get('/api/orders', async ({ request }) => {
-    await delay(300);
-    const url = new URL(request.url);
-    const status = url.searchParams.get('status');
-
+  rest.get('/api/orders', (req, res, ctx) => {
+    const status = req.url.searchParams.get('status');
     let results = mockOrders;
     if (status) {
       results = results.filter((o) => o.status === status);
     }
-    return HttpResponse.json(results);
+    return res(ctx.status(200), ctx.json(results));
   }),
 
-  http.get('/api/orders/:id', async ({ params }) => {
-    await delay(200);
-    const order = mockOrders.find((o) => o.id === Number(params.id));
+  rest.get('/api/orders/:id', (req, res, ctx) => {
+    const order = mockOrders.find((o) => o.id === Number(req.params.id));
     if (!order) {
-      return HttpResponse.json({ error: 'Order not found' }, { status: 404 });
+      return res(ctx.status(404), ctx.json({ error: 'Order not found' }));
     }
-    return HttpResponse.json(order);
+    return res(ctx.status(200), ctx.json(order));
   }),
 
-  http.post('/api/orders', async ({ request }) => {
-    await delay(500);
-    const body = (await request.json()) as Partial<Order>;
+  rest.post('/api/orders', (req, res, ctx) => {
+    const body = req.body as Partial<Order>;
 
-    // Validation
     if (!body.userId) {
-      return HttpResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
+      return res(ctx.status(400), ctx.json({ error: 'userId is required' }));
     }
     if (!body.items || body.items.length === 0) {
-      return HttpResponse.json(
-        { error: 'Order must contain at least one item' },
-        { status: 400 }
-      );
+      return res(ctx.status(400), ctx.json({ error: 'Order must contain at least one item' }));
     }
 
-    // Validate items
     for (const item of body.items) {
       if ((item.quantity || 0) <= 0) {
-        return HttpResponse.json(
-          { error: 'Quantity must be greater than 0' },
-          { status: 400 }
-        );
+        return res(ctx.status(400), ctx.json({ error: 'Quantity must be greater than 0' }));
       }
     }
 
     const newOrder: Order = {
-      id: Math.max(...mockOrders.map((o) => o.id)) + 1,
+      id: Math.max(...mockOrders.map((o) => o.id), 0) + 1,
       userId: body.userId,
       items: body.items,
       total: (body.items || []).reduce(
-        (sum, item) => sum + (item.unitPrice || 0) * (item.quantity || 0),
+        (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
         0
       ),
       status: 'pending',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
     mockOrders.push(newOrder);
-    return HttpResponse.json(newOrder, { status: 201 });
+    return res(ctx.status(201), ctx.json(newOrder));
   }),
 
-  http.put('/api/orders/:id', async ({ params, request }) => {
-    await delay(300);
-    const order = mockOrders.find((o) => o.id === Number(params.id));
+  rest.put('/api/orders/:id', (req, res, ctx) => {
+    const order = mockOrders.find((o) => o.id === Number(req.params.id));
     if (!order) {
-      return HttpResponse.json({ error: 'Order not found' }, { status: 404 });
+      return res(ctx.status(404), ctx.json({ error: 'Order not found' }));
     }
 
-    const updates = (await request.json()) as Partial<Order>;
+    const updates = req.body as Partial<Order>;
     if (updates.status) {
-      const validStatuses = ['pending', 'completed', 'cancelled'];
+      const validStatuses: Array<'pending' | 'processing' | 'shipped' | 'delivered'> = 
+        ['pending', 'processing', 'shipped', 'delivered'];
       if (!validStatuses.includes(updates.status)) {
-        return HttpResponse.json(
-          { error: 'Invalid status' },
-          { status: 400 }
-        );
+        return res(ctx.status(400), ctx.json({ error: 'Invalid status' }));
       }
     }
 
-    Object.assign(order, updates, {
-      updatedAt: new Date().toISOString(),
-    });
-    return HttpResponse.json(order);
+    Object.assign(order, updates);
+    return res(ctx.status(200), ctx.json(order));
   }),
 ];
-
-// Export configured server
-export const server = setupServer(...handlers);

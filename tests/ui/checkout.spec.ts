@@ -182,11 +182,32 @@ describe('@ui @checkout Checkout Flow Tests', () => {
 });
 
 describe('@ui @checkout Validation Tests', () => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
   let checkoutPage: CheckoutPage;
 
-  test.beforeEach(async ({ page }) => {
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
     checkoutPage = new CheckoutPage(page);
     await checkoutPage.navigate();
+  });
+
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
   });
 
   it('@regression should show error for missing first name', async () => {
@@ -305,11 +326,32 @@ describe('@ui @checkout Validation Tests', () => {
 });
 
 describe('@ui @checkout Form Functionality Tests', () => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
   let checkoutPage: CheckoutPage;
 
-  test.beforeEach(async ({ page }) => {
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
     checkoutPage = new CheckoutPage(page);
     await checkoutPage.navigate();
+  });
+
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
   });
 
   it('@regression should clear form data', async () => {
@@ -358,7 +400,32 @@ describe('@ui @checkout Form Functionality Tests', () => {
 });
 
 describe('@ui @checkout Order Confirmation Tests', () => {
-  it('@regression should show order confirmation after successful purchase', async ({ page }) => {
+  let browser: Browser;
+  let context: BrowserContext;
+  let page: Page;
+
+  beforeEach(async () => {
+    browser = await chromium.launch({
+      headless: config.get('headless'),
+    });
+    context = await browser.newContext();
+    page = await context.newPage();
+  });
+
+  afterEach(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
+  });
+
+  it('@regression should show order confirmation after successful purchase', async () => {
     // @arrange
     const shoppingPage = new ShoppingPage(page);
     const cartPage = new CartPage(page);
@@ -384,7 +451,7 @@ describe('@ui @checkout Order Confirmation Tests', () => {
     logger.info(`✓ Order confirmation displayed: ${orderNumber}`);
   });
 
-  it('@regression should allow continuing shopping after order', async ({ page }) => {
+  it('@regression should allow continuing shopping after order', async () => {
     // @arrange
     const shoppingPage = new ShoppingPage(page);
     const checkoutPage = new CheckoutPage(page);

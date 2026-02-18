@@ -101,7 +101,7 @@ export class ProductsPage extends BasePage {
   /**
    * Check if product is in cart
    */
-  async isProductInCart(productName: string): Promise<boolean> {
+  async isProductInCart(): Promise<boolean> {
     const cartCount = await this.getCartItemCount();
     return cartCount > 0;
   }

@@ -3,7 +3,12 @@
  * Initializes Mock Service Worker for all test suites
  */
 
-import { server } from './handlers.js';
+import { beforeAll, afterEach, afterAll } from '@jest/globals';
+import { setupServer } from 'msw/node';
+import { handlers } from './handlers.js';
+
+// Create server with handlers
+export const server = setupServer(...handlers);
 
 // Start MSW server before all tests
 beforeAll(() => {
@@ -19,3 +24,4 @@ afterEach(() => {
 afterAll(() => {
   server.close();
 });
+

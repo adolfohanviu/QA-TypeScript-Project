@@ -258,5 +258,6 @@ export class CartPage extends BasePage {
     const continueButton = this.page.locator('[data-testid="continue-shopping-button"]');
     await continueButton.click();
     await this.page.waitForURL(/.*products.*/);
-  }}
+  }
+}
 

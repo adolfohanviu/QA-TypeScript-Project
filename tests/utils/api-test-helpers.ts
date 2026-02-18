@@ -131,9 +131,9 @@ export class ApiAssertions {
    */
   static assertValidProduct(product: Product): void {
     if (!product.id) throw new Error('Product must have an id');
-    if (!product.title) throw new Error('Product must have a title');
+    if (!product.name) throw new Error('Product must have a name');
     if (product.price <= 0) throw new Error('Product price must be positive');
-    if (product.stock < 0) throw new Error('Product stock cannot be negative');
+    if (product.inStock === undefined) throw new Error('Product must have inStock property');
   }
 
   /**
