@@ -358,39 +358,6 @@ Performance tests measure:
 - Kubernetes: Prometheus metrics
 - Custom: Parse `metrics.json` for visualization
 
-## 🤝 Contributing
-
-### Adding New Tests
-
-1. **Create page object** (if UI test):
-   ```typescript
-   export class NewPage extends BasePage {
-     async navigate(): Promise<void> {
-       await this.page.goto('/new-page');
-     }
-   }
-   ```
-
-2. **Write test file**:
-   ```typescript
-   test.describe('@feature New Feature Tests', () => {
-     test('@smoke should verify feature', async () => {
-       // Arrange, Act, Assert
-     });
-   });
-   ```
-
-3. **Run tests**:
-   ```bash
-   npm run test tests/ui/new-feature.spec.ts
-   ```
-
-### Test Standards
-- Use **AAA pattern**: Arrange, Act, Assert
-- Add **descriptive comments**: @feature, @smoke, @regression tags
-- Include **error messages**: Clear assertion messages
-- Follow **naming convention**: `should_do_something_when_condition`
-
 ## 📚 Documentation
 
 - **Playwright Docs**: https://playwright.dev
@@ -436,16 +403,6 @@ kubectl logs -n qa-automation pod-name
 kubectl describe pod pod-name -n qa-automation
 ```
 
-## 📞 Support
-
-- **Issues**: GitHub Issues page
-- **Discussions**: GitHub Discussions
-- **Email**: qa-team@company.com
-
-## 📄 License
-
-MIT License - See LICENSE file for details
-
 ## 🎖️ Enterprise Features Checklist
 
 - ✅ TypeScript with strict type checking
@@ -463,7 +420,3 @@ MIT License - See LICENSE file for details
 - ✅ Security scanning in pipelines
 - ✅ Scheduled test runs
 - ✅ Production-grade documentation
-
----
-
-**Built with ❤️ for enterprise test automation**
