@@ -19,33 +19,17 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Runtime
-FROM node:20-alpine
+#
+# Uses the official Playwright image instead of node:20-alpine: it ships all
+# three browsers and their OS dependencies pre-installed on a glibc (Ubuntu)
+# base. The previous alpine + manual `apk add` + `playwright install-deps`
+# approach didn't actually work — `install-deps` only knows how to provision
+# apt-based systems and is a no-op on musl/Alpine, and WebKit in particular
+# isn't officially supported there at all. Pin the tag to the exact
+# @playwright/test version in package.json.
+FROM mcr.microsoft.com/playwright:v1.62.1-noble
 
 WORKDIR /app
-
-# Install Playwright system dependencies
-RUN apk add --no-cache \
-    libstdc++ \
-    libx11 \
-    libxss1 \
-    libx11-xcb \
-    libxcb1 \
-    libxrender1 \
-    libxext6 \
-    libxkbcommon \
-    libfreetype6 \
-    fontconfig
-
-# Install browsers.
-# NOTE: `playwright install-deps` only knows how to provision apt-based
-# (Debian/Ubuntu) systems; on Alpine (musl, apk) it is effectively a no-op,
-# so browser OS deps here rely entirely on the manual `apk add` list above.
-# WebKit in particular is not officially supported on musl/Alpine and may
-# fail to launch even with that list. If e2e-in-Docker proves unreliable,
-# switch this stage's base image to a glibc-based one (e.g. node:20-slim)
-# or the official mcr.microsoft.com/playwright image.
-RUN npx -y playwright install && \
-    npx -y playwright install-deps
 
 # Copy package files
 COPY package*.json ./
