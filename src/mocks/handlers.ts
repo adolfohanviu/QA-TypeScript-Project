@@ -284,20 +284,26 @@ const orderHandlers = [
     const body = (await request.json()) as any;
     const newOrderId = Math.max(...Array.from(orderStore.keys()), 0) + 1;
 
-    // Calculate total from items if not provided
-    let total = body?.total || 0;
-    if (!total && body?.items && body.items.length > 0) {
-      total = body.items.reduce((sum: number, item: any) => {
-        const itemPrice = (item.unitPrice || 50) * (item.quantity || 1);
-        return sum + itemPrice;
-      }, 0);
-    }
+    // Resolve a real price per item — the OrderItem contract requires `price`,
+    // but a client may only send productId/quantity (e.g. price lookup happens
+    // server-side in a real catalog). Never persist an item without one.
+    const items = (body?.items || []).map((item: any) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price ?? item.unitPrice ?? 50,
+    }));
+
+    // Calculate total from the resolved items if not provided explicitly
+    const total = body?.total || items.reduce(
+      (sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity,
+      0,
+    );
 
     const newOrder: MockOrder = {
       id: newOrderId,
       userId: body?.userId,
-      items: body?.items || [],
-      total: total,
+      items,
+      total,
       status: 'pending',
       createdAt: new Date().toISOString(),
     };

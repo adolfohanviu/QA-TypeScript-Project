@@ -4,12 +4,30 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
+import { z } from 'zod';
 import { createApiClient, ApiClient } from '@/utils/api-client';
 import { config } from '@/utils/config';
 import { createLogger } from '@/utils/logger';
 import type { Order, OrderStatus } from '@/types/index';
 
 const VALID_ORDER_STATUSES: OrderStatus[] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+
+// Schema derived from the real response shape in src/mocks/handlers.ts's orderHandlers,
+// not just the Order interface — the handler is the actual contract under test.
+const OrderItemSchema = z.object({
+  productId: z.number(),
+  quantity: z.number(),
+  price: z.number(),
+});
+
+const OrderSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  items: z.array(OrderItemSchema),
+  total: z.number().nonnegative(),
+  status: z.enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled']),
+  createdAt: z.string().datetime(),
+});
 
 describe('@api @contract Order API Tests', () => {
   let apiClient: ApiClient;
@@ -133,63 +151,42 @@ describe('@api @contract Order API Tests', () => {
   });
 
   describe('@contract Order Response Schema', () => {
-    it('should have required order fields', async () => {
+    it('should match OrderSchema for every order returned by GET /orders', async () => {
       // @arrange
       // @act
-      const orders = await apiClient.get<Order[]>('/orders');
-      if (orders.length === 0) return;
-
-      const order = orders[0];
-
-      // @assert
-      expect(order).toHaveProperty('id');
-      expect(order).toHaveProperty('userId');
-      expect(order).toHaveProperty('items');
-      expect(order).toHaveProperty('total');
-      expect(order).toHaveProperty('status');
-      expect(order).toHaveProperty('createdAt');
-      logger.info('Order schema validation passed');
-    });
-
-    it('should have valid order totals', async () => {
-      // @arrange
-      // @act
-      const orders = await apiClient.get<Order[]>('/orders');
+      const orders = await apiClient.get<unknown[]>('/orders');
 
       // @assert
       orders.forEach((order) => {
-        expect(order.total).toBeGreaterThanOrEqual(0);
-        expect(typeof order.total).toBe('number');
+        const result = OrderSchema.safeParse(order);
+        expect(result.success).toBe(true);
       });
-      logger.info('All orders have valid totals');
+      logger.info(`Validated ${orders.length} orders against OrderSchema`);
     });
 
-    it('should have valid status values', async () => {
+    it('should match OrderSchema for a single order returned by GET /orders/:id', async () => {
       // @arrange
+      const orderId = 1;
+
       // @act
-      const orders = await apiClient.get<Order[]>('/orders');
+      const order = await apiClient.get<unknown>(`/orders/${orderId}`);
 
       // @assert
-      orders.forEach((order) => {
-        expect(VALID_ORDER_STATUSES).toContain(order.status);
-      });
-      logger.info('All orders have valid status values');
+      const result = OrderSchema.safeParse(order);
+      expect(result.success).toBe(true);
+      logger.info(`Order ${orderId} matches OrderSchema`);
     });
 
-    it('should have timestamps in ISO format', async () => {
+    it('should reject a malformed order missing required fields', () => {
       // @arrange
-      // @act
-      const orders = await apiClient.get<Order[]>('/orders');
-      if (orders.length === 0) return;
+      const malformedOrder = { id: 1, userId: 1 };
 
-      const order = orders[0];
+      // @act
+      const result = OrderSchema.safeParse(malformedOrder);
 
       // @assert
-      expect(order.createdAt).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
-      );
-      expect(order.status).toBeDefined();
-      logger.info('Order timestamps are in valid ISO format');
+      expect(result.success).toBe(false);
+      logger.info('Malformed order correctly rejected by OrderSchema');
     });
   });
 
