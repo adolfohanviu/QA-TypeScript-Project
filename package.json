@@ -2,7 +2,7 @@
   "name": "@qa/playwright-typescript",
   "version": "1.0.0",
   "description": "Test automation framework with Playwright, TypeScript, and Jest — real E2E tests against a live app, mocked API tests, and an AI-assisted development workflow (see AGENTS.md)",
-  "author": "QA Engineering",
+  "author": "Adolfo Han",
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0",
