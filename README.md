@@ -14,8 +14,7 @@ A **production-grade**, **enterprise-level** test automation framework built wit
 ### Code Quality
 - 🔍 **TypeScript** - Strict type checking and inference
 - 📝 **ESLint** - Code linting with modern rules
-- 🧪 **100% Test Coverage** - Jest configuration with coverage reports
-- 📊 **Code Metrics** - Complexity and maintainability reports
+- 🧪 **Coverage Threshold** - Jest enforces a 70% branches/functions/lines/statements minimum on the API suite
 
 ### DevOps & Deployment
 - 🐳 **Docker** - Multi-stage builds with optimized images
@@ -40,7 +39,7 @@ A **production-grade**, **enterprise-level** test automation framework built wit
 │   │   ├── products.spec.ts    # Product API tests
 │   │   ├── orders.spec.ts      # Order API tests
 │   │   └── workflows.spec.ts   # E2E API workflows
-│   ├── ui/
+│   ├── e2e/                    # Playwright end-to-end suites
 │   │   ├── auth.spec.ts        # Authentication tests
 │   │   ├── shopping-cart.spec.ts # Shopping & cart tests
 │   │   └── checkout.spec.ts    # Checkout flow tests
@@ -113,23 +112,22 @@ cp .env.example .env
 ### Run Tests
 
 ```bash
-# Run all tests
+# Run all tests (API via Jest + E2E via Playwright)
 npm test
 
 # Run specific test suites
-npm run test:ui          # UI tests only
-npm run test:api         # API tests only
-npm run test:unit        # Unit tests only
+npm run test:api         # API tests only (Jest)
+npm run test:e2e         # E2E tests only (Playwright)
 
 # Run with specific tags
-npm run test -- --grep "@smoke"           # Smoke tests
-npm run test -- --grep "@regression"      # Regression tests
+npm run test:smoke        # @smoke across both Jest and Playwright
+npm run test:regression   # @regression across both Jest and Playwright
 
-# Run in debug mode
+# Run in debug mode (API/Jest suite)
 npm run test:debug
 
-# Run with UI mode
-npm run test:ui:mode
+# Run E2E in headed mode
+npm run test:e2e:headed
 
 # Generate coverage report
 npm run coverage
@@ -193,6 +191,29 @@ export const handlers = [
 ];
 ```
 
+## 🤖 AI-Assisted Development
+
+This repo carries an `AGENTS.md` (canonical, tool-agnostic) plus a thin `CLAUDE.md` pointer, three
+project skills under `.claude/skills/`, and reusable prompt templates under `prompts/`. Any AI
+agent working here — Claude Code included — is expected to read `AGENTS.md` first and use the
+skills/prompts rather than re-deriving repo conventions from scratch each time.
+
+**Case study.** These files aren't theoretical — they're the direct output of an AI-assisted
+audit-and-repair pass run against this exact codebase, and they encode what that pass actually
+found. Half of the original E2E suite was written entirely against a fictional `example.com`
+domain with invented selectors that matched nothing real, and had never once run against the
+actual app. The CI pipeline ran every step, including the test run itself, with
+`continue-on-error: true`, and referenced npm scripts (`test:visual`, `test:a11y`,
+`test:performance`, `test:unit`) that were never defined — a pipeline that could never fail,
+testing capabilities that were never built. A `try/catch` around a dynamic MSW import was
+silently swallowing a `SyntaxError`, so API mocking never activated and the "API tests" were
+hitting the real network the whole time. An order's `status` field had four different,
+mutually-inconsistent type definitions spread across types, mocks, and fixtures, with nothing to
+catch the drift. And `playwright.config.ts` existed but nothing invoked it — the "UI" tests
+actually ran through Jest driving a manually-launched raw `chromium` instance. All five are fixed
+in the current codebase; the instruction files above exist so the next AI-assisted change doesn't
+reintroduce them.
+
 ## 🐳 Docker Usage
 
 ### Build Image
@@ -206,7 +227,7 @@ docker build -t playwright-tests:latest .
 docker-compose up --build
 
 # Run specific service
-docker-compose up tests-ui
+docker-compose up tests-e2e
 docker-compose up tests-api
 ```
 
@@ -257,20 +278,20 @@ kubectl describe cronjob playwright-tests-scheduled -n qa-automation
 
 #### 1. **Push Workflow** (test-push.yml)
 - Triggers on push to main/develop/feature branches
-- Runs: Unit, API, and UI tests
-- Matrix: Node 18.x & 20.x
+- Runs: API (Jest) and E2E (Playwright) tests
+- Matrix: Node 20.x
 - Reports: Test results & Playwright reports
 
 #### 2. **Pull Request Workflow** (test-pr.yml)
 - Runs on PR creation/update
-- Includes: Test suite, code coverage, visual regression, accessibility
+- Includes: Full test suite (API + E2E), code coverage
 - Comments results on PR
 
 #### 3. **Scheduled Workflows** (test-scheduled.yml)
 - **Nightly**: Full test suite (2 AM UTC)
 - **Weekly**: Regression suite (Sunday 6 AM UTC)
-- **On-demand**: Manual trigger via workflow_dispatch
-- Includes: Performance tests, database tests, Slack notifications
+- **On-demand**: Manual trigger via workflow_dispatch (all/api/e2e/regression/smoke)
+- Includes: Slack notifications
 
 ### Viewing Results
 ```bash
@@ -288,12 +309,7 @@ https://github.com/your-org/playwright-tests/actions
 ### Generate Reports
 ```bash
 # Auto-generated during test runs
-npm run test
-
-# Generate from results
-npm run test:report:merge
-npm run test:report:html
-npm run test:report:json
+npm test
 ```
 
 ### Access Reports
@@ -414,9 +430,8 @@ kubectl describe pod pod-name -n qa-automation
 - ✅ Docker containerization
 - ✅ Kubernetes deployment ready
 - ✅ GitHub Actions CI/CD pipelines
-- ✅ Test reporting (HTML, JSON, JUnit)
+- ✅ Test reporting (HTML, JSON)
 - ✅ Code coverage analysis
-- ✅ Performance testing framework
 - ✅ Security scanning in pipelines
 - ✅ Scheduled test runs
 - ✅ Production-grade documentation
