@@ -3,7 +3,7 @@
  * Uses Axios for HTTP requests
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
 import { config } from './config';
 import { createLogger } from './logger';
 
@@ -159,11 +159,11 @@ export class ApiClient {
   /**
    * Validate response status
    */
-  private validateResponse(response: any): void {
+  private validateResponse(response: AxiosResponse): void {
     if (response.status >= 400) {
       throw new ApiError(
         response.status,
-        response.config.url,
+        response.config.url ?? '',
         `HTTP ${response.status}: ${response.statusText}`,
         response.data,
       );
