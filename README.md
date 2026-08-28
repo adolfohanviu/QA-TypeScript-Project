@@ -1,6 +1,6 @@
 # Playwright TypeScript Automated Testing Suite
 
-A **production-grade**, **enterprise-level** test automation framework built with **Playwright**, **TypeScript**, and **Jest**. Includes comprehensive UI testing, API testing, and integration tests with modern tooling for CI/CD pipelines.
+A test automation framework built with **Playwright**, **TypeScript**, and **Jest**: real end-to-end tests against a live app (saucedemo.com), mocked API tests, and an AI-assisted development workflow documented in [`AGENTS.md`](./AGENTS.md) from an actual audit-and-repair pass on this exact codebase.
 
 ## 🎯 Features
 
@@ -21,14 +21,13 @@ A **production-grade**, **enterprise-level** test automation framework built wit
 - 🐙 **Kubernetes** - Production-ready K8s manifests
 - 🚀 **CI/CD** - GitHub Actions workflows for automated testing
 - 📈 **Scheduled Tests** - Nightly and weekly test runs
-- 📊 **Test Reports** - HTML, JSON, and JUnit formats
+- 📊 **Test Reports** - HTML and JSON formats (Playwright), default console reporter (Jest)
 
-### Enterprise Features
+### Reliability & Ops
 - 🔐 **Secrets Management** - Secured credential handling
 - 🔄 **Retry Logic** - Intelligent test retries with backoff
 - 📝 **Structured Logging** - Winston-based logging system
-- 🎯 **Test Tagging** - @smoke, @regression, @api tags for filtering
-- 📊 **Metrics & Analytics** - Performance tracking and reporting
+- 🎯 **Test Tagging** - @smoke, @regression, @contract tags for filtering (two different mechanisms — see `AGENTS.md`)
 
 ## 📦 Project Structure
 
@@ -419,19 +418,19 @@ kubectl logs -n qa-automation pod-name
 kubectl describe pod pod-name -n qa-automation
 ```
 
-## 🎖️ Enterprise Features Checklist
+## ✅ What's Actually Implemented
 
 - ✅ TypeScript with strict type checking
-- ✅ Page Object Model architecture
-- ✅ API testing with contract validation
-- ✅ Mock Service Worker for API mocking
+- ✅ Page Object Model architecture (Locator-based, verified against the live app)
+- ⚠️ API contract checks - currently shallow (`toHaveProperty`/`typeof`); real schema-validated contract tests are scaffolded via the `generate-contract-test` skill, not yet applied repo-wide
+- ✅ Mock Service Worker v2 for API mocking
 - ✅ Comprehensive error handling
 - ✅ Structured logging system
 - ✅ Docker containerization
 - ✅ Kubernetes deployment ready
-- ✅ GitHub Actions CI/CD pipelines
+- ✅ GitHub Actions CI/CD pipelines (no `continue-on-error` masking on real test steps)
 - ✅ Test reporting (HTML, JSON)
-- ✅ Code coverage analysis
-- ✅ Security scanning in pipelines
+- ✅ Code coverage analysis (70% threshold enforced on the API suite)
+- ✅ Security scanning in pipelines (`npm audit --audit-level=moderate`)
 - ✅ Scheduled test runs
-- ✅ Production-grade documentation
+- ✅ AI-assisted development workflow (`AGENTS.md`, project skills, documented prompts)

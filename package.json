@@ -1,7 +1,7 @@
 {
   "name": "@qa/playwright-typescript",
   "version": "1.0.0",
-  "description": "Enterprise-grade test automation framework with Playwright, TypeScript, and Jest",
+  "description": "Test automation framework with Playwright, TypeScript, and Jest — real E2E tests against a live app, mocked API tests, and an AI-assisted development workflow (see AGENTS.md)",
   "author": "QA Engineering",
   "license": "MIT",
   "engines": {
@@ -32,7 +32,7 @@
     "docker:test": "docker run --rm -v $(pwd)/coverage:/app/coverage -v $(pwd)/playwright-report:/app/playwright-report qa-typescript-tests:latest npm test"
   },
   "dependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.62.1",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
     "winston": "^3.11.0",
