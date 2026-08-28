@@ -3,7 +3,7 @@ name: Test Suite - Push
 on:
   push:
     branches:
-      - main
+      - master
       - develop
       - feature/**
     paths:
