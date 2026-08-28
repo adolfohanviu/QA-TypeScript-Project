@@ -35,7 +35,9 @@ export class LoggerFactory {
       format: winston.format.combine(
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         winston.format.errors({ stack: true }),
-        winston.format.metadata(),
+        // Keep `context` out of the nested `metadata` bucket - the console
+        // transport's printf below reads it as a top-level field.
+        winston.format.metadata({ fillExcept: ['level', 'message', 'timestamp', 'context'] }),
         winston.format.json(),
       ),
       transports: [
