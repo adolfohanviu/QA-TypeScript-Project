@@ -54,8 +54,6 @@ jobs:
       run: npm test
       env:
         CI: 'true'
-        BASE_URL: ${{ secrets.BASE_URL }}
-        API_BASE_URL: ${{ secrets.API_BASE_URL }}
         HEADLESS: 'true'
       id: tests
 

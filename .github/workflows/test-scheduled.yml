@@ -65,8 +65,6 @@ jobs:
         fi
       env:
         CI: 'true'
-        BASE_URL: ${{ secrets.BASE_URL_PROD }}
-        API_BASE_URL: ${{ secrets.API_BASE_URL_PROD }}
         HEADLESS: 'true'
         RETRY_ATTEMPTS: '3'
         REPORT_DIR: './test-results'

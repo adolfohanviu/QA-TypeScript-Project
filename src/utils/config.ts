@@ -10,10 +10,17 @@ import type { TestConfig } from '@/types/index';
 // Load environment variables
 dotenv.config();
 
+// Treat an empty-string env var the same as an unset one (e.g. GitHub Actions
+// interpolates a reference to a nonexistent secret as '""', not undefined).
+const emptyToUndefined = (val: unknown) => (val === '' ? undefined : val);
+
 // Zod schema for validation
 const ConfigSchema = z.object({
-  baseUrl: z.string().url().default('https://www.saucedemo.com'),
-  apiBaseUrl: z.string().url().default('https://jsonplaceholder.typicode.com'),
+  baseUrl: z.preprocess(emptyToUndefined, z.string().url().default('https://www.saucedemo.com')),
+  apiBaseUrl: z.preprocess(
+    emptyToUndefined,
+    z.string().url().default('https://jsonplaceholder.typicode.com'),
+  ),
   headless: z
     .string()
     .transform(val => val.toLowerCase() === 'true')
