@@ -63,3 +63,6 @@ ehthumbs.db
 .cache/
 .eslintcache
 .prettierignore
+
+# Local agent-tooling cache (machine-specific absolute paths, auto-regenerated)
+.atl/
