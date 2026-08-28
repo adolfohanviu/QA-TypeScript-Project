@@ -10,8 +10,10 @@ on:
       - 'tests/**'
       - 'src/**'
       - 'package.json'
+      - 'package-lock.json'
       - 'playwright.config.ts'
       - '.github/workflows/test-push.yml'
+  workflow_dispatch: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
