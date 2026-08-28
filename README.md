@@ -1,6 +1,6 @@
 # Playwright TypeScript Automated Testing Suite
 
-[![Test Suite - Push](https://github.com/adolfohanviu/QA-TypeScript-Project/actions/workflows/test-push.yml/badge.svg)](https://github.com/adolfohanviu/QA-TypeScript-Project/actions/workflows/test-push.yml)
+[![Test Suite - Push](https://github.com/adolfohanviu/qa-typescript-framework/actions/workflows/test-push.yml/badge.svg)](https://github.com/adolfohanviu/qa-typescript-framework/actions/workflows/test-push.yml)
 
 A test automation framework built with **Playwright**, **TypeScript**, and **Jest**: real end-to-end tests against a live app (saucedemo.com), mocked API tests, and an AI-assisted development workflow documented in [`AGENTS.md`](./AGENTS.md) from an actual audit-and-repair pass on this exact codebase.
 
@@ -44,6 +44,10 @@ A test automation framework built with **Playwright**, **TypeScript**, and **Jes
 │   │   ├── auth.spec.ts        # Authentication tests
 │   │   ├── shopping-cart.spec.ts # Shopping & cart tests
 │   │   └── checkout.spec.ts    # Checkout flow tests
+│   ├── utils/
+│   │   └── api-test-helpers.ts # API testing utilities
+│   └── setup.ts                # Jest setup file
+├── src/
 │   ├── pages/                  # Page Object Models
 │   │   ├── BasePage.ts         # Base class for all pages
 │   │   ├── LoginPage.ts        # Login page object
@@ -55,15 +59,9 @@ A test automation framework built with **Playwright**, **TypeScript**, and **Jes
 │   │   ├── handlers.ts         # MSW request handlers
 │   │   └── server.ts           # MSW server setup
 │   ├── utils/
-│   │   ├── api-test-helpers.ts # API testing utilities
-│   │   └── fixtures.ts         # Test fixtures
-│   └── setup.ts                # Jest setup file
-├── src/
-│   ├── utils/
 │   │   ├── config.ts           # Type-safe config with Zod
 │   │   ├── logger.ts           # Winston logging setup
-│   │   ├── api-client.ts       # Axios HTTP client
-│   │   └── error-handler.ts    # Error handling utilities
+│   │   └── api-client.ts       # Axios HTTP client (ApiError + error handling inline)
 │   └── types/
 │       └── index.ts            # TypeScript type definitions
 ├── k8s/                        # Kubernetes manifests
@@ -88,7 +86,7 @@ A test automation framework built with **Playwright**, **TypeScript**, and **Jes
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ and npm
+- **Node.js** 20+ and npm 10+
 - **Docker** (optional, for containerized testing)
 - **Kubernetes** cluster (optional, for K8s deployment)
 
@@ -96,8 +94,8 @@ A test automation framework built with **Playwright**, **TypeScript**, and **Jes
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/playwright-tests.git
-cd playwright-tests
+git clone https://github.com/adolfohanviu/qa-typescript-framework.git
+cd qa-typescript-framework
 
 # Install dependencies
 npm install
@@ -281,7 +279,7 @@ kubectl describe cronjob playwright-tests-scheduled -n qa-automation
 ### Viewing Results
 ```bash
 # GitHub Actions
-https://github.com/your-org/playwright-tests/actions
+https://github.com/adolfohanviu/qa-typescript-framework/actions
 
 # Artifact downloads
 - Test results (HTML, JSON, JUnit)
