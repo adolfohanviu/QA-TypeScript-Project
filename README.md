@@ -1,5 +1,7 @@
 # Playwright TypeScript Automated Testing Suite
 
+[![Test Suite - Push](https://github.com/adolfohanviu/QA-TypeScript-Project/actions/workflows/test-push.yml/badge.svg)](https://github.com/adolfohanviu/QA-TypeScript-Project/actions/workflows/test-push.yml)
+
 A test automation framework built with **Playwright**, **TypeScript**, and **Jest**: real end-to-end tests against a live app (saucedemo.com), mocked API tests, and an AI-assisted development workflow documented in [`AGENTS.md`](./AGENTS.md) from an actual audit-and-repair pass on this exact codebase.
 
 ## 🎯 Features
