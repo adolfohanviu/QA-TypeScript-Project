@@ -53,9 +53,19 @@ COPY --from=builder /app/playwright.config.ts ./
 # Copy other necessary files
 COPY .env.example .env.example
 
-# Health check
+# Run as the base image's non-root user. Results/reports get written under
+# /app (or a bind-mounted host dir in docker-compose), so give pwuser
+# ownership before dropping root - a bind mount from the host inherits the
+# host directory's permissions, not the image's, so this alone doesn't cover
+# every case (see docker-compose.yml's `results` volume, created by whoever
+# runs `docker compose up` on the host).
+RUN chown -R pwuser:pwuser /app
+USER pwuser
+
+# Health check - fails if the runtime deps this suite actually needs aren't
+# resolvable (unlike a bare console.log, which always exits 0).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "console.log('ready')" || exit 1
+    CMD node -e "require('winston'); require('@playwright/test')" || exit 1
 
 # Default command: runs the full suite (API via Jest, then E2E via Playwright).
 CMD ["npm", "run", "test"]
