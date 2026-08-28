@@ -134,24 +134,27 @@ npm run coverage
 
 ### Configuration
 
-Create `.env` file in root directory:
+Create `.env` from `.env.example` in the root directory - these are the actual keys `src/utils/config.ts` reads:
 
 ```env
-# Application
-NODE_ENV=development
-BASE_URL=http://localhost:3000
-API_BASE_URL=http://localhost:3001
+# Test Configuration
+BASE_URL=https://www.saucedemo.com
+API_BASE_URL=https://jsonplaceholder.typicode.com
 
-# Playwright
+# Browser Configuration
 HEADLESS=true
-SLOW_MO=0
+BROWSER_TYPE=chromium
 TIMEOUT=30000
+RETRIES=0
 
 # Logging
 LOG_LEVEL=info
 
-# Reporting
-REPORT_DIR=./test-results
+# API Mocking
+MOCK_API=false
+
+# CI/CD
+CI=false
 ```
 
 ## 🏗️ Architecture
@@ -201,7 +204,7 @@ skills/prompts rather than re-deriving repo conventions from scratch each time.
 
 ### Build Image
 ```bash
-docker build -t playwright-tests:latest .
+docker build -t qa-typescript-tests:latest .
 ```
 
 ### Run with Docker Compose
