@@ -199,36 +199,6 @@ project skills under `.claude/skills/`, and reusable prompt templates under `pro
 agent working here — Claude Code included — is expected to read `AGENTS.md` first and use the
 skills/prompts rather than re-deriving repo conventions from scratch each time.
 
-**Case study.** These files aren't theoretical — they're the direct output of an AI-assisted
-audit-and-repair pass run against this exact codebase, and they encode what that pass actually
-found. Half of the original E2E suite was written entirely against a fictional `example.com`
-domain with invented selectors that matched nothing real, and had never once run against the
-actual app. The CI pipeline ran every step, including the test run itself, with
-`continue-on-error: true`, and referenced npm scripts (`test:visual`, `test:a11y`,
-`test:performance`, `test:unit`) that were never defined — a pipeline that could never fail,
-testing capabilities that were never built. A `try/catch` around a dynamic MSW import was
-silently swallowing a `SyntaxError`, so API mocking never activated and the "API tests" were
-hitting the real network the whole time. An order's `status` field had four different,
-mutually-inconsistent type definitions spread across types, mocks, and fixtures, with nothing to
-catch the drift. And `playwright.config.ts` existed but nothing invoked it — the "UI" tests
-actually ran through Jest driving a manually-launched raw `chromium` instance. All five are fixed
-in the current codebase; the instruction files above exist so the next AI-assisted change doesn't
-reintroduce them.
-
-**Coda: fixing it locally wasn't enough.** After all of the above was fixed, verified locally, and
-pushed, the CI badge above still didn't turn green on the first real run — because "passes on my
-machine" and "passes in the actual target environment" are different claims. Watching the real
-GitHub Actions run (not just re-reading the YAML) surfaced three more bugs that no local check
-could have caught: `test-push.yml`/`test-pr.yml` were listening for pushes to `main`, but this
-repo's default branch is `master` — the Push workflow had zero runs in its entire history despite
-being "active." `.gitignore` excluded `package-lock.json` from day one, so CI had no lockfile to
-install from and failed before a single dependency installed. And `BASE_URL`/`API_BASE_URL` were
-wired to `secrets.BASE_URL`/`secrets.API_BASE_URL`, which were never configured — GitHub
-interpolates a missing secret as an empty string, not `undefined`, so `ConfigManager`'s
-`z.string().url().default(...)` never fell back to its default (`.default()` only fires on
-`undefined`) and threw before any test ran. Same lesson as lesson 1, one layer deeper: verify
-against the real environment, not just against what the code appears to do.
-
 ## 🐳 Docker Usage
 
 ### Build Image
