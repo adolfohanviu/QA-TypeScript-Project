@@ -5,7 +5,7 @@
 
 import { createApiClient, ApiClient } from '@/utils/api-client';
 import { config } from '@/utils/config';
-import type { User, Product, Order } from '@/types/index';
+import type { User, Product, Order, OrderStatus } from '@/types/index';
 
 /**
  * API Test Context
@@ -98,7 +98,7 @@ export class ApiTestContext {
   /**
    * Update order status
    */
-  async updateOrderStatus(id: number, status: string): Promise<Order> {
+  async updateOrderStatus(id: number, status: OrderStatus): Promise<Order> {
     return this.apiClient.put<Order>(`/orders/${id}`, { status });
   }
 
@@ -146,7 +146,7 @@ export class ApiAssertions {
       throw new Error('Order must have at least one item');
     }
     if (order.total < 0) throw new Error('Order total cannot be negative');
-    const validStatuses = ['pending', 'completed', 'cancelled'];
+    const validStatuses: OrderStatus[] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
     if (!validStatuses.includes(order.status)) {
       throw new Error(`Order status must be one of: ${validStatuses.join(', ')}`);
     }

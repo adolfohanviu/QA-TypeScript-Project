@@ -28,12 +28,14 @@ export interface Product {
   inStock: boolean;
 }
 
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
 export interface Order {
   id: number;
   userId: number;
   items: OrderItem[];
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
+  status: OrderStatus;
   createdAt: string;
 }
 

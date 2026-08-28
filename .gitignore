@@ -15,6 +15,7 @@ build/
 
 # Test Results & Reports
 test-results/
+test-results.json
 coverage/
 playwright-report/
 html-report/

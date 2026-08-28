@@ -11,15 +11,24 @@ export class ProductsPage extends BasePage {
     inventoryItems: '.inventory_list .inventory_item',
     productName: '.inventory_item_name',
     productPrice: '.inventory_item_price',
-    addToCartButton: '[data-test="add-to-cart-button"]',
-    removeButton: '[data-test="remove-button"]',
-    shoppingCart: '.shopping_cart_link',
-    cartBadge: '.shopping_cart_badge',
+    shoppingCart: '[data-test="shopping-cart-link"]',
+    cartBadge: '[data-test="shopping-cart-badge"]',
   } as const;
 
   constructor(page: Page) {
     super(page);
     this.addTag('@products');
+  }
+
+  /**
+   * Build the real per-product data-test slug from its displayed name
+   * e.g. "Sauce Labs Bike Light" -> "sauce-labs-bike-light"
+   */
+  private slugify(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   /**
@@ -33,50 +42,47 @@ export class ProductsPage extends BasePage {
    * Get number of products displayed
    */
   async getProductCount(): Promise<number> {
-    const items = await this.page.$$(this.selectors.inventoryItems);
-    return items.length;
+    return await this.page.locator(this.selectors.inventoryItems).count();
   }
 
   /**
    * Add product to cart by index
    */
   async addProductToCart(index: number): Promise<void> {
-    const buttons = await this.page.$$(this.selectors.addToCartButton);
-    if (index >= buttons.length) {
+    const items = this.page.locator(this.selectors.inventoryItems);
+    const count = await items.count();
+    if (index >= count) {
       throw new Error(`Product at index ${index} not found`);
     }
+    const name = await items.nth(index).locator(this.selectors.productName).textContent();
+    if (!name) {
+      throw new Error(`Product at index ${index} has no name`);
+    }
     this.logger.info(`Adding product at index ${index} to cart`);
-    await buttons[index].click();
+    await this.click(`[data-test="add-to-cart-${this.slugify(name)}"]`);
   }
 
   /**
    * Add product to cart by name
    */
   async addProductToCartByName(productName: string): Promise<void> {
-    const products = await this.page.$$(this.selectors.inventoryItems);
+    const slug = this.slugify(productName);
+    const selector = `[data-test="add-to-cart-${slug}"]`;
 
-    for (const product of products) {
-      const name = await product.$eval(this.selectors.productName, el => el.textContent);
-      if (name === productName) {
-        const button = await product.$(this.selectors.addToCartButton);
-        if (button) {
-          this.logger.info(`Adding product '${productName}' to cart`);
-          await button.click();
-          return;
-        }
-      }
+    if (!(await this.elementExists(selector))) {
+      throw new Error(`Product '${productName}' not found`);
     }
 
-    throw new Error(`Product '${productName}' not found`);
+    this.logger.info(`Adding product '${productName}' to cart`);
+    await this.click(selector);
   }
 
   /**
    * Get all product names
    */
   async getProductNames(): Promise<string[]> {
-    return await this.page.$$eval(this.selectors.productName, elements =>
-      elements.map(el => el.textContent || ''),
-    );
+    const names = await this.page.locator(this.selectors.productName).allTextContents();
+    return names.map(name => name.trim());
   }
 
   /**

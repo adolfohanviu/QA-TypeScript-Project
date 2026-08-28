@@ -24,7 +24,7 @@ export class LoginPage extends BasePage {
    * Navigate to login page
    */
   async navigateToLogin(): Promise<void> {
-    await this.goto(`${this.page.context().browser()?.contexts()[0]?.pages()[0]?.url() || ''}`);
+    await this.goto('https://www.saucedemo.com/');
     this.logger.info('Navigated to login page');
   }
 
@@ -86,10 +86,6 @@ export class LoginPage extends BasePage {
    * Get login button state
    */
   async isLoginButtonEnabled(): Promise<boolean> {
-    const element = await this.page.$eval(
-      this.selectors.loginButton,
-      (el: any) => !el.disabled,
-    );
-    return element;
+    return await this.getLocator(this.selectors.loginButton).isEnabled();
   }
 }

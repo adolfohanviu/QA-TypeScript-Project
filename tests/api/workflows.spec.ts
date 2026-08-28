@@ -64,9 +64,9 @@ describe('@api @workflow Checkout E2E Flow', () => {
       // Step 4: Confirm Order
       logger.info('Step 4: Confirming order');
       const confirmedOrder = await apiClient.put<Order>(`/orders/${order.id}`, {
-        status: 'completed',
+        status: 'delivered',
       });
-      expect(confirmedOrder.status).toBe('completed');
+      expect(confirmedOrder.status).toBe('delivered');
       logger.info(`✓ Order confirmed: ${confirmedOrder.id}`);
 
       logger.info('✓ Complete purchase workflow successful');
@@ -138,17 +138,17 @@ describe('@api @workflow Checkout E2E Flow', () => {
       expect(order.status).toBe('pending');
       logger.info(`Stage 1: Order created (${order.status})`);
 
-      // Update to completed
+      // Update to delivered
       const completedOrder = await apiClient.put<Order>(
         `/orders/${order.id}`,
-        { status: 'completed' }
+        { status: 'delivered' }
       );
-      expect(completedOrder.status).toBe('completed');
-      logger.info(`Stage 2: Order completed (${completedOrder.status})`);
+      expect(completedOrder.status).toBe('delivered');
+      logger.info(`Stage 2: Order delivered (${completedOrder.status})`);
 
       // Verify final state
       const finalOrder = await apiClient.get<Order>(`/orders/${order.id}`);
-      expect(finalOrder.status).toBe('completed');
+      expect(finalOrder.status).toBe('delivered');
       logger.info(`Stage 3: Order status verified (${finalOrder.status})`);
 
       logger.info('✓ Order lifecycle test passed');

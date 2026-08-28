@@ -43,12 +43,12 @@ services:
     depends_on:
       - api
 
-  # UI Tests
-  tests-ui:
+  # E2E Tests (Playwright)
+  tests-e2e:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: qa-tests-ui
+    container_name: qa-tests-e2e
     environment:
       CI: "true"
       BASE_URL: http://app:3000
@@ -65,7 +65,7 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
-    command: npm run test:ui
+    command: npm run test:e2e
 
   # API Tests
   tests-api:
@@ -102,7 +102,7 @@ services:
     command: |
       sh -c "npm install -g http-server && http-server -p 3333 -c-1"
     depends_on:
-      - tests-ui
+      - tests-e2e
       - tests-api
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3333"]

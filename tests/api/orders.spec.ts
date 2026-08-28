@@ -7,7 +7,9 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 import { createApiClient, ApiClient } from '@/utils/api-client';
 import { config } from '@/utils/config';
 import { createLogger } from '@/utils/logger';
-import type { Order } from '@/types/index';
+import type { Order, OrderStatus } from '@/types/index';
+
+const VALID_ORDER_STATUSES: OrderStatus[] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 describe('@api @contract Order API Tests', () => {
   let apiClient: ApiClient;
@@ -60,7 +62,7 @@ describe('@api @contract Order API Tests', () => {
       expect(order.id).toBe(orderId);
       expect(order.userId).toBeDefined();
       expect(order.total).toBeGreaterThanOrEqual(0);
-      expect(['pending', 'completed', 'cancelled']).toContain(order.status);
+      expect(VALID_ORDER_STATUSES).toContain(order.status);
       logger.info(`Retrieved order ${orderId} with status: ${order.status}`);
     });
   });
@@ -107,14 +109,14 @@ describe('@api @contract Order API Tests', () => {
   });
 
   describe('@regression PUT /orders/:id', () => {
-    it('should update order status to completed', async () => {
+    it('should update order status to delivered', async () => {
       // @arrange & @act
       const updatedOrder = await apiClient.put<Order>('/orders/1', {
-        status: 'completed',
+        status: 'delivered',
       });
 
       // @assert
-      expect(updatedOrder.status).toBe('completed');
+      expect(updatedOrder.status).toBe('delivered');
       logger.info(`Updated order 1 status to: ${updatedOrder.status}`);
     });
 
@@ -164,14 +166,12 @@ describe('@api @contract Order API Tests', () => {
 
     it('should have valid status values', async () => {
       // @arrange
-      const validStatuses = ['pending', 'completed', 'cancelled'];
-
       // @act
       const orders = await apiClient.get<Order[]>('/orders');
 
       // @assert
       orders.forEach((order) => {
-        expect(validStatuses).toContain(order.status);
+        expect(VALID_ORDER_STATUSES).toContain(order.status);
       });
       logger.info('All orders have valid status values');
     });

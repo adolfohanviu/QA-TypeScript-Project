@@ -67,14 +67,6 @@ export class LoggerFactory {
     this.loggers.set(context, logger);
     return logger;
   }
-
-  /**
-   * Get or create logger for current test
-   */
-  public static getTestLogger(): Logger {
-    const testName = expect.getState().currentTestName || 'unknown-test';
-    return this.getLogger(testName);
-  }
 }
 
 /**

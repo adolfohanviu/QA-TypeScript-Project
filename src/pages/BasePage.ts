@@ -31,7 +31,7 @@ export abstract class BasePage {
   async goto(url: string): Promise<void> {
     this.logger.info(`Navigating to ${url}`);
     try {
-      await this.page.goto(url, { waitUntil: 'networkidle' });
+      await this.page.goto(url);
       this.logger.info(`Successfully navigated to ${url}`);
     } catch (error) {
       this.logger.error(`Failed to navigate to ${url}`, error as Error);
@@ -59,7 +59,7 @@ export abstract class BasePage {
   async waitForElement(selector: string, timeout = 30000): Promise<void> {
     this.logger.debug(`Waiting for element: ${selector}`);
     try {
-      await this.page.waitForSelector(selector, { timeout });
+      await this.page.locator(selector).first().waitFor({ state: 'visible', timeout });
       this.logger.debug(`Element found: ${selector}`);
     } catch (error) {
       this.logger.error(`Element not found: ${selector}`, error as Error);
@@ -73,7 +73,7 @@ export abstract class BasePage {
   async click(selector: string): Promise<void> {
     this.logger.debug(`Clicking element: ${selector}`);
     try {
-      await this.page.click(selector);
+      await this.page.locator(selector).click();
       this.logger.debug(`Clicked element: ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to click element: ${selector}`, error as Error);
@@ -87,7 +87,7 @@ export abstract class BasePage {
   async fillText(selector: string, text: string): Promise<void> {
     this.logger.debug(`Filling text in ${selector}: ${text}`);
     try {
-      await this.page.fill(selector, text);
+      await this.page.locator(selector).fill(text);
       this.logger.debug(`Text filled in ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to fill text in ${selector}`, error as Error);
@@ -101,7 +101,7 @@ export abstract class BasePage {
   async typeText(selector: string, text: string, delay = 50): Promise<void> {
     this.logger.debug(`Typing text in ${selector}: ${text}`);
     try {
-      await this.page.locator(selector).type(text, { delay });
+      await this.page.locator(selector).pressSequentially(text, { delay });
       this.logger.debug(`Text typed in ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to type text in ${selector}`, error as Error);
@@ -114,7 +114,7 @@ export abstract class BasePage {
    */
   async getText(selector: string): Promise<string> {
     try {
-      const text = await this.page.textContent(selector);
+      const text = await this.page.locator(selector).textContent();
       return text || '';
     } catch (error) {
       this.logger.error(`Failed to get text from ${selector}`, error as Error);
@@ -127,7 +127,7 @@ export abstract class BasePage {
    */
   async getAttribute(selector: string, attribute: string): Promise<string | null> {
     try {
-      return await this.page.getAttribute(selector, attribute);
+      return await this.page.locator(selector).getAttribute(attribute);
     } catch (error) {
       this.logger.error(`Failed to get attribute from ${selector}`, error as Error);
       throw error;
@@ -139,7 +139,7 @@ export abstract class BasePage {
    */
   async isVisible(selector: string): Promise<boolean> {
     try {
-      return await this.page.isVisible(selector);
+      return await this.page.locator(selector).isVisible();
     } catch {
       return false;
     }
@@ -149,7 +149,7 @@ export abstract class BasePage {
    * Check if element exists
    */
   async elementExists(selector: string): Promise<boolean> {
-    return (await this.page.$(selector)) !== null;
+    return (await this.page.locator(selector).count()) > 0;
   }
 
   /**
@@ -158,7 +158,7 @@ export abstract class BasePage {
   async selectOption(selector: string, value: string): Promise<void> {
     this.logger.debug(`Selecting option '${value}' from ${selector}`);
     try {
-      await this.page.selectOption(selector, value);
+      await this.page.locator(selector).selectOption(value);
       this.logger.debug(`Selected option '${value}'`);
     } catch (error) {
       this.logger.error(`Failed to select option from ${selector}`, error as Error);
@@ -178,20 +178,6 @@ export abstract class BasePage {
       });
     } catch (error) {
       this.logger.error(`Failed to take screenshot`, error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Wait for navigation
-   */
-  async waitForNavigation(action: () => Promise<void>): Promise<void> {
-    this.logger.debug('Waiting for navigation');
-    try {
-      await Promise.all([this.page.waitForNavigation(), action()]);
-      this.logger.debug('Navigation completed');
-    } catch (error) {
-      this.logger.error('Navigation timeout', error as Error);
       throw error;
     }
   }
@@ -234,7 +220,7 @@ export abstract class BasePage {
   async doubleClick(selector: string): Promise<void> {
     this.logger.debug(`Double-clicking element: ${selector}`);
     try {
-      await this.page.dblclick(selector);
+      await this.page.locator(selector).dblclick();
       this.logger.debug(`Double-clicked element: ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to double-click element: ${selector}`, error as Error);
@@ -248,7 +234,7 @@ export abstract class BasePage {
   async rightClick(selector: string): Promise<void> {
     this.logger.debug(`Right-clicking element: ${selector}`);
     try {
-      await this.page.click(selector, { button: 'right' });
+      await this.page.locator(selector).click({ button: 'right' });
       this.logger.debug(`Right-clicked element: ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to right-click element: ${selector}`, error as Error);
@@ -262,7 +248,7 @@ export abstract class BasePage {
   async hover(selector: string): Promise<void> {
     this.logger.debug(`Hovering over element: ${selector}`);
     try {
-      await this.page.hover(selector);
+      await this.page.locator(selector).hover();
       this.logger.debug(`Hovered over element: ${selector}`);
     } catch (error) {
       this.logger.error(`Failed to hover over element: ${selector}`, error as Error);
