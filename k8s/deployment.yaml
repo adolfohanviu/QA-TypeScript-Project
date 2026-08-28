@@ -25,7 +25,7 @@ spec:
       serviceAccountName: playwright-tests
       containers:
       - name: playwright
-        image: playwright-tests:latest
+        image: qa-typescript-tests:latest
         imagePullPolicy: Always
         env:
         - name: CI
@@ -99,8 +99,6 @@ spec:
                   values:
                   - playwright-tests
               topologyKey: kubernetes.io/hostname
-      restartPolicy: Never
-      ttlSecondsAfterFinished: 3600
 
 ---
 apiVersion: batch/v1
@@ -122,7 +120,7 @@ spec:
           serviceAccountName: playwright-tests
           containers:
           - name: playwright
-            image: playwright-tests:latest
+            image: qa-typescript-tests:latest
             imagePullPolicy: Always
             env:
             - name: CI

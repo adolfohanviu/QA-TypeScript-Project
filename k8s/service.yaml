@@ -16,22 +16,7 @@ spec:
     targetPort: 3333
     protocol: TCP
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: report-server
-  namespace: qa-automation
-  labels:
-    app: report-server
-    tier: testing
-spec:
-  type: LoadBalancer
-  selector:
-    app: report-server
-  ports:
-  - name: http
-    port: 80
-    targetPort: 3333
-    protocol: TCP
-  sessionAffinity: ClientIP
+# A report-server Service (matching docker-compose.yml's report-server
+# service - a simple http-server exposing /results on :3333) belongs here
+# once there's a k8s Deployment for it. There isn't one yet, so it's left
+# out rather than shipping a Service with no backing Pods.
