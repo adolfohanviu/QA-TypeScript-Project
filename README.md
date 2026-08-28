@@ -215,6 +215,20 @@ actually ran through Jest driving a manually-launched raw `chromium` instance. A
 in the current codebase; the instruction files above exist so the next AI-assisted change doesn't
 reintroduce them.
 
+**Coda: fixing it locally wasn't enough.** After all of the above was fixed, verified locally, and
+pushed, the CI badge above still didn't turn green on the first real run — because "passes on my
+machine" and "passes in the actual target environment" are different claims. Watching the real
+GitHub Actions run (not just re-reading the YAML) surfaced three more bugs that no local check
+could have caught: `test-push.yml`/`test-pr.yml` were listening for pushes to `main`, but this
+repo's default branch is `master` — the Push workflow had zero runs in its entire history despite
+being "active." `.gitignore` excluded `package-lock.json` from day one, so CI had no lockfile to
+install from and failed before a single dependency installed. And `BASE_URL`/`API_BASE_URL` were
+wired to `secrets.BASE_URL`/`secrets.API_BASE_URL`, which were never configured — GitHub
+interpolates a missing secret as an empty string, not `undefined`, so `ConfigManager`'s
+`z.string().url().default(...)` never fell back to its default (`.default()` only fires on
+`undefined`) and threw before any test ran. Same lesson as lesson 1, one layer deeper: verify
+against the real environment, not just against what the code appears to do.
+
 ## 🐳 Docker Usage
 
 ### Build Image
