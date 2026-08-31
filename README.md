@@ -27,9 +27,10 @@ A test automation framework built with **Playwright**, **TypeScript**, and **Jes
 
 ### Reliability & Ops
 - 🔐 **Secrets Management** - Secured credential handling
-- 🔄 **Retry Logic** - Intelligent test retries with backoff
+- 🔄 **Retry Logic** - Intelligent test retries with backoff (Playwright's own flaky-test retries, `playwright.config.ts`)
+- 🔁 **API Resilience** - `ApiClient.get()` retries on 502/503/504 and dropped connections with exponential backoff, verified against fault-injected MockServer scenarios - see [Resilience testing](#resilience-testing-fault-injection) below
 - 📝 **Structured Logging** - Winston-based logging system
-- 🎯 **Test Tagging** - @smoke, @regression, @contract tags for filtering (two different mechanisms — see `AGENTS.md`)
+- 🎯 **Test Tagging** - @smoke, @regression, @contract, @resilience tags for filtering (two different mechanisms — see `AGENTS.md`)
 
 ## 📦 Project Structure
 
@@ -193,6 +194,27 @@ export const handlers = [
 ];
 ```
 
+### Resilience testing (fault injection)
+
+`ApiClient.get()` retries on `502`/`503`/`504` and on dropped/refused connections (2 retries,
+exponential backoff). POST/PUT/PATCH/DELETE don't retry automatically - this API has no
+idempotency key, so blindly replaying a write could double-submit it.
+
+MSW can't be told to fail on demand the way this needs, so
+`tests/api/resilience.spec.ts` runs against [MockServer](https://www.mock-server.com/) instead,
+registering fault scenarios per test via its expectations API: a flaky endpoint that fails
+twice then recovers, one that drops the connection once then recovers, one that always fails
+(retries exhaust, the error surfaces), and one that delays past the client timeout.
+
+```bash
+docker run -p 1080:1080 mockserver/mockserver   # or: docker compose --profile mock up -d api
+npm run test:resilience
+```
+
+The suite is skipped (not failed) if MockServer isn't reachable - checked synchronously
+before Jest collects any tests. It's a hard gate in `test-push.yml`'s `resilience` job, which
+starts MockServer as a GitHub Actions service container.
+
 ## 🤖 AI-Assisted Development
 
 This repo carries an `AGENTS.md` (canonical, tool-agnostic) plus a thin `CLAUDE.md` pointer, three
@@ -264,7 +286,8 @@ kubectl describe cronjob playwright-tests-scheduled -n qa-automation
 
 #### 1. **Push Workflow** (test-push.yml)
 - Triggers on push to main/develop/feature branches
-- Runs: API (Jest) and E2E (Playwright) tests
+- Runs: API (Jest) and E2E (Playwright) tests, plus a resilience job that spins up
+  MockServer as a service container and runs the fault-injection suite
 - Matrix: Node 20.x
 - Reports: Test results & Playwright reports
 
@@ -413,6 +436,7 @@ kubectl describe pod pod-name -n qa-automation
 - ✅ Mock Service Worker v2 for API mocking
 - ✅ Comprehensive error handling
 - ✅ Structured logging system
+- ✅ API resilience - retry/backoff verified against fault-injected MockServer scenarios, gated in CI
 - ✅ Docker containerization
 - ✅ Kubernetes deployment ready
 - ✅ GitHub Actions CI/CD pipelines (no `continue-on-error` masking on real test steps)

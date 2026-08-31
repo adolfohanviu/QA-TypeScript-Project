@@ -9,6 +9,9 @@ import { createLogger } from './logger';
 
 const logger = createLogger('ApiClient');
 
+const RETRYABLE_STATUS_CODES = new Set([502, 503, 504]);
+const RETRYABLE_ERROR_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNABORTED']);
+
 /**
  * Custom API error
  */
@@ -30,6 +33,8 @@ export class ApiError extends Error {
 export class ApiClient {
   private client: AxiosInstance;
   private baseURL: string;
+  maxRetries = 2;
+  backoffBaseMs = 200;
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || config.get('apiBaseUrl');
@@ -80,16 +85,51 @@ export class ApiClient {
   }
 
   /**
-   * Make GET request
+   * Make GET request, retried on transient failures.
+   *
+   * Only GET retries automatically - it's the one verb here safe to replay
+   * blindly. POST/PUT/PATCH/DELETE aren't idempotent without a request-side
+   * idempotency key this API doesn't have, so retrying them here could
+   * double-submit; a caller that needs that has to opt in explicitly.
    */
   async get<T>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response = await this.client.get<T>(endpoint, config);
-      this.validateResponse(response);
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error, 'GET', endpoint);
+    let attempt = 0;
+
+    for (;;) {
+      try {
+        const response = await this.client.get<T>(endpoint, config);
+
+        if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < this.maxRetries) {
+          attempt += 1;
+          logger.warn(
+            `Retrying GET ${endpoint} after status ${response.status} (attempt ${attempt}/${this.maxRetries})`,
+          );
+          await this.backoff(attempt);
+          continue;
+        }
+
+        this.validateResponse(response);
+        return response.data;
+      } catch (error) {
+        if (this.isRetryableError(error) && attempt < this.maxRetries) {
+          attempt += 1;
+          const reason = axios.isAxiosError(error) ? error.code ?? error.message : String(error);
+          logger.warn(`Retrying GET ${endpoint} after ${reason} (attempt ${attempt}/${this.maxRetries})`);
+          await this.backoff(attempt);
+          continue;
+        }
+
+        throw this.handleError(error, 'GET', endpoint);
+      }
     }
+  }
+
+  private isRetryableError(error: unknown): boolean {
+    return axios.isAxiosError(error) && !!error.code && RETRYABLE_ERROR_CODES.has(error.code);
+  }
+
+  private backoff(attempt: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, this.backoffBaseMs * 2 ** (attempt - 1)));
   }
 
   /**
@@ -207,6 +247,14 @@ export class ApiClient {
    */
   clearAuthToken(): void {
     delete this.client.defaults.headers.common['Authorization'];
+  }
+
+  /**
+   * Override the request timeout set at construction (e.g. for a test that
+   * needs a short timeout without waiting out the default one).
+   */
+  setTimeout(ms: number): void {
+    this.client.defaults.timeout = ms;
   }
 
   /**

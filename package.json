@@ -18,6 +18,7 @@
     "test:smoke": "jest --testNamePattern='@smoke' && playwright test --grep @smoke",
     "test:regression": "jest --testNamePattern='@regression' && playwright test --grep @regression",
     "test:contract": "jest --testNamePattern='@contract'",
+    "test:resilience": "jest --testNamePattern='@resilience'",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=lcov",
