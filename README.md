@@ -67,8 +67,7 @@ A test automation framework built with **Playwright**, **TypeScript**, and **Jes
 │       └── index.ts            # TypeScript type definitions
 ├── k8s/                        # Kubernetes manifests
 │   ├── namespace.yaml          # K8s namespace
-│   ├── deployment.yaml         # K8s deployments & cronjobs
-│   ├── service.yaml            # K8s services
+│   ├── job.yaml                # One-off Job (manual run) + scheduled CronJob
 │   ├── configmap.yaml          # K8s configurations
 │   └── rbac.yaml               # K8s RBAC configuration
 ├── .github/workflows/          # CI/CD pipelines
@@ -247,32 +246,51 @@ docker-compose up report-server
 
 ## ☸️ Kubernetes Deployment
 
+These manifests are verified against a real cluster ([kind](https://kind.sigs.k8s.io/)), not just
+schema-checked - see [What's Actually Implemented](#-whats-actually-implemented) for what that
+caught.
+
 ### Prerequisites
 - Kubernetes cluster (1.24+)
 - kubectl configured
+- At least one node labeled `workload=testing` - the Job/CronJob's `nodeSelector`
+  isolates this workload onto dedicated test-runner nodes. Without a matching
+  label the pod stays `Pending` (`0/1 nodes are available: 1 node(s) didn't
+  match Pod's node affinity/selector`):
+  ```bash
+  kubectl label nodes <node-name> workload=testing
+  ```
+  On a single-node dev cluster (kind, minikube), label that one node.
+- The image loaded onto every node that can run this workload - nothing in
+  this repo pushes `qa-typescript-tests:latest` to a registry, so
+  `imagePullPolicy: IfNotPresent` only works if the image is already there:
+  ```bash
+  npm run docker:build
+  kind load docker-image qa-typescript-tests:latest --name <cluster-name>   # kind
+  # or: minikube image load qa-typescript-tests:latest                      # minikube
+  ```
+  For a real multi-node cluster, push to a registry instead and update the
+  `image:` field in `k8s/job.yaml` accordingly.
 
 ### Deploy
 
 ```bash
-# Create namespace and deploy
+# Create namespace and one-time resources
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/rbac.yaml
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
 
-# Check deployment status
-kubectl get pods -n qa-automation
+# Run the suite once (Job is immutable once created - use `create`, not `apply`)
+kubectl create -f k8s/job.yaml
+
+# Check status
+kubectl get jobs -n qa-automation
 kubectl logs -n qa-automation -l app=playwright-tests -f
-
-# View test results
-kubectl port-forward -n qa-automation svc/report-server 3333:80
 ```
 
 ### Scheduled Tests
 Tests run automatically via CronJob:
 - **Daily** at 2 AM UTC
-- **Weekly regression** tests on Sunday at 6 AM UTC
 
 View scheduled jobs:
 ```bash
@@ -437,8 +455,21 @@ kubectl describe pod pod-name -n qa-automation
 - ✅ Comprehensive error handling
 - ✅ Structured logging system
 - ✅ API resilience - retry/backoff verified against fault-injected MockServer scenarios, gated in CI
-- ✅ Docker containerization
-- ✅ Kubernetes deployment ready
+- ✅ Docker containerization - non-root user (gosu-based entrypoint), verified writable
+  against a bind mount with real Linux permission semantics (root:root, mode 755 -
+  what a Linux host's dockerd produces for an auto-created bind-mount source dir),
+  not just a Windows-host bind mount that doesn't enforce the same thing
+- ✅ Kubernetes - applied and run against a real cluster (kind), not just schema-checked.
+  That caught three real bugs a manifest read alone wouldn't: the original resource was
+  a Deployment running a one-shot `npm run test` command, which crash-looped forever
+  under `restartPolicy: Always` and could never pass its `readinessProbe` (checked for
+  `/results/.ready`, a file nothing in the suite ever writes) - now a Job, matching the
+  already-correct CronJob; `imagePullPolicy: Always` with no registry push anywhere in
+  this repo meant the pod could never actually pull the image in any environment - now
+  `IfNotPresent`, documented with `kind load docker-image`/`minikube image load`; and
+  the 512Mi/1Gi memory limit OOMKilled the container mid-suite (ts-jest + Jest + Playwright
+  is not a 1Gi workload) - raised to 1Gi/3Gi and confirmed with a full run (`80 passed`,
+  `STATUS: Complete`)
 - ✅ GitHub Actions CI/CD pipelines (no `continue-on-error` masking on real test steps)
 - ✅ Test reporting (HTML, JSON)
 - ✅ Code coverage analysis (70% threshold enforced on the API suite)

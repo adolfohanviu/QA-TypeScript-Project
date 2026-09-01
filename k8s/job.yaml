@@ -1,21 +1,29 @@
-apiVersion: apps/v1
-kind: Deployment
+# This directory is a plain manifest set (no Chart.yaml/templates), so this
+# Job is meant to be launched with `kubectl create -f k8s/job.yaml` for each
+# manual run - generateName lets the API server assign a unique name per
+# creation. `kubectl apply` doesn't fit a generateName resource (there's no
+# fixed name to diff against) and a Job's spec is immutable after creation
+# anyway, so a second `apply` with the same name would fail outright.
+#
+# This used to be a Deployment, which is the wrong resource kind for this
+# container: it runs `npm run test` once and exits, but a Deployment's
+# restartPolicy is always Always, so Kubernetes kept restarting it forever
+# after every run (confirmed live: 2 restarts within the first 2 minutes).
+# livenessProbe/readinessProbe checked for /results/.ready and /results/.health
+# marker files nothing in this suite ever writes, so the pod could never
+# report Ready either. A Job (like the CronJob right below, which was already
+# correct) is the right fit - run to completion, no probes needed.
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: playwright-tests
+  generateName: playwright-tests-
   namespace: qa-automation
   labels:
     app: playwright-tests
     tier: testing
 spec:
-  replicas: 1
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: playwright-tests
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
   template:
     metadata:
       labels:
@@ -23,10 +31,11 @@ spec:
         tier: testing
     spec:
       serviceAccountName: playwright-tests
+      restartPolicy: OnFailure
       containers:
       - name: playwright
         image: qa-typescript-tests:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         env:
         - name: CI
           value: "true"
@@ -48,10 +57,10 @@ spec:
           value: "production"
         resources:
           requests:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "500m"
           limits:
-            memory: "1Gi"
+            memory: "3Gi"
             cpu: "1000m"
         volumeMounts:
         - name: results
@@ -59,26 +68,6 @@ spec:
         - name: config
           mountPath: /app/config
           readOnly: true
-        livenessProbe:
-          exec:
-            command:
-            - test
-            - -f
-            - /results/.health
-          initialDelaySeconds: 30
-          periodSeconds: 60
-          timeoutSeconds: 10
-          failureThreshold: 3
-        readinessProbe:
-          exec:
-            command:
-            - test
-            - -f
-            - /results/.ready
-          initialDelaySeconds: 20
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 2
       volumes:
       - name: results
         emptyDir: {}
@@ -87,18 +76,6 @@ spec:
           name: qa-config
       nodeSelector:
         workload: testing
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - playwright-tests
-              topologyKey: kubernetes.io/hostname
 
 ---
 apiVersion: batch/v1
@@ -121,7 +98,7 @@ spec:
           containers:
           - name: playwright
             image: qa-typescript-tests:latest
-            imagePullPolicy: Always
+            imagePullPolicy: IfNotPresent
             env:
             - name: CI
               value: "true"
@@ -141,10 +118,10 @@ spec:
               value: "/results"
             resources:
               requests:
-                memory: "512Mi"
+                memory: "1Gi"
                 cpu: "500m"
               limits:
-                memory: "1Gi"
+                memory: "3Gi"
                 cpu: "1000m"
             volumeMounts:
             - name: results
