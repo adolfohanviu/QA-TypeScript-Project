@@ -53,19 +53,26 @@ COPY --from=builder /app/playwright.config.ts ./
 # Copy other necessary files
 COPY .env.example .env.example
 
-# Run as the base image's non-root user. Results/reports get written under
-# /app (or a bind-mounted host dir in docker-compose), so give pwuser
-# ownership before dropping root - a bind mount from the host inherits the
-# host directory's permissions, not the image's, so this alone doesn't cover
-# every case (see docker-compose.yml's `results` volume, created by whoever
-# runs `docker compose up` on the host).
-RUN chown -R pwuser:pwuser /app
-USER pwuser
+# Own /app as pwuser for the common case (docker run, no bind mounts - the
+# image's own filesystem). A bind-mounted host directory - like
+# docker-compose.yml's ./results - keeps the host's ownership regardless of
+# anything set here; verified against a real Linux-permission-semantics
+# volume (root:root, mode 755, matching what a Linux host's dockerd produces
+# for an auto-created bind-mount source dir): pwuser couldn't write into it.
+# gosu + docker-entrypoint.sh fixes that at container start instead.
+RUN chown -R pwuser:pwuser /app && \
+    apt-get update && apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Health check - fails if the runtime deps this suite actually needs aren't
 # resolvable (unlike a bare console.log, which always exits 0).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('winston'); require('@playwright/test')" || exit 1
+
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Default command: runs the full suite (API via Jest, then E2E via Playwright).
 CMD ["npm", "run", "test"]
